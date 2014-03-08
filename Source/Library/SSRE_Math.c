@@ -169,15 +169,16 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
 
 {
 	SSRE_Vec4_t tempOut;
+	SSRE_Vec4_t tempDistWorking;
 	SSRE_Fixed_t tempDist;
 	SSRE_Fixed_t nearestDist = 0x7fffffff;
 
 	assert( wantedIntersection != SSRE_MATH_INTERSECTION_NONE );
 	
-	if( SSRE_Math_LineLineIntersection2( &tempOut, line0, line1, point0, point1 ) == wantedIntersection )
+	if( SSRE_Math_LineLineIntersection2( &tempOut, point0, point1, line0, line1 ) == wantedIntersection )
 	{
-		SSRE_Vec4_Sub2( &tempOut, &tempOut, line0 );
-		tempDist = SSRE_Vec4_MagSqr2( &tempOut );
+		SSRE_Vec4_Sub2( &tempDistWorking, &tempOut, line0 );
+		tempDist = SSRE_Vec4_MagSqr2( &tempDistWorking );
 		if( tempDist < nearestDist )
 		{
 			nearestDist = tempDist;
@@ -185,10 +186,10 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
 		}
 	}
 
-	if( SSRE_Math_LineLineIntersection2( &tempOut, line0, line1, point1, point2 ) == wantedIntersection )
+	if( SSRE_Math_LineLineIntersection2( &tempOut, point1, point2, line0, line1 ) == wantedIntersection )
 	{
-		SSRE_Vec4_Sub2( &tempOut, &tempOut, line0 );
-		tempDist = SSRE_Vec4_MagSqr2( &tempOut );
+		SSRE_Vec4_Sub2( &tempDistWorking, &tempOut, line0 );
+		tempDist = SSRE_Vec4_MagSqr2( &tempDistWorking );
 		if( tempDist < nearestDist )
 		{
 			nearestDist = tempDist;
@@ -196,10 +197,10 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
 		}
 	}
 
-	if( SSRE_Math_LineLineIntersection2( &tempOut, line0, line1, point2, point0 ) == wantedIntersection )
+	if( SSRE_Math_LineLineIntersection2( &tempOut, point2, point0, line0, line1 ) == wantedIntersection )
 	{
-		SSRE_Vec4_Sub2( &tempOut, &tempOut, line0 );
-		tempDist = SSRE_Vec4_MagSqr2( &tempOut );
+		SSRE_Vec4_Sub2( &tempDistWorking, &tempOut, line0 );
+		tempDist = SSRE_Vec4_MagSqr2( &tempDistWorking );
 		if( tempDist < nearestDist )
 		{
 			nearestDist = tempDist;
@@ -215,17 +216,15 @@ u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_
 {
 	int i;
 	SSRE_Vec4_t col = { 0, 0, 0, 0 };
-
-	assert( 16 == SSRE_FIXED_PRECISION ); // Hard coded to 16 bit precision at the mo.
 	
 	for( i = 0; i < num; ++i )
 	{
 		SSRE_Vec4_t in = 
 		{
-			( colours[i] & 0x000000ff ) << 16,
-			( colours[i] & 0x0000ff00 ) << 8,
-			( colours[i] & 0x00ff0000 ),
-			( colours[i] & 0xff000000 ) >> 8
+			( colours[i] & 0x000000ff ) << SSRE_FIXED_PRECISION,
+			( colours[i] & 0x0000ff00 ) >> 8 << SSRE_FIXED_PRECISION,
+			( colours[i] & 0x00ff0000 ) >> 16 << SSRE_FIXED_PRECISION,
+			( colours[i] & 0xff000000 ) >> 24 << SSRE_FIXED_PRECISION
 		};
 
 		SSRE_Vec4_MulScalar( &in, &in, amounts[i] );
@@ -233,16 +232,16 @@ u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_
 	}
 
 	// Floor to int.
-	col.x = col.x >> 16;
-	col.y = col.y >> 16;
-	col.z = col.z >> 16;
-	col.w = col.w >> 16;
+	col.x = col.x >> SSRE_FIXED_PRECISION;
+	col.y = col.y >> SSRE_FIXED_PRECISION;
+	col.z = col.z >> SSRE_FIXED_PRECISION;
+	col.w = col.w >> SSRE_FIXED_PRECISION;
 
 	// Clamp.
-	col.x = col.x > 0xff ? 0xff : col.x;
-	col.y = col.y > 0xff ? 0xff : col.y;
-	col.z = col.z > 0xff ? 0xff : col.z;
-	col.w = col.w > 0xff ? 0xff : col.w;
+	col.x = ( col.x > 0xff ? 0xff : col.x ) & 0xff;
+	col.y = ( col.y > 0xff ? 0xff : col.y ) & 0xff;
+	col.z = ( col.z > 0xff ? 0xff : col.z ) & 0xff;
+	col.w = ( col.w > 0xff ? 0xff : col.w ) & 0xff;
 
 	// Pack for output.
 	return col.x | col.y << 8 | col.z << 16 | col.w << 24;

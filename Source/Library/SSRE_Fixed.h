@@ -37,7 +37,7 @@ typedef s32 SSRE_Fixed_t;
 #define SSRE_FIXED_PRECISION			( 12 )
 #define SSRE_FIXED_DOUBLE_PRECISION		( SSRE_FIXED_PRECISION << 1 )
 #define SSRE_FIXED_HALF_PRECISION		( SSRE_FIXED_PRECISION >> 1 )
-#define SSRE_FIXED_FLOAT_STEP			( 1.0f / (float)(1 << SSRE_FIXED_PRECISION ) )
+#define SSRE_FIXED_FLOAT_STEP			( 1.0f / (float)( 1 << SSRE_FIXED_PRECISION ) )
 
 /**
  * Float to fixed conversion macro.

@@ -197,10 +197,11 @@ void simpleTestDrawRegioned( u32* pixels, int width, int height )
 	}
 }
 
-void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
+void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32* colours )
 {
 	SSRE_Fixed_t x, y;
 	int ret0, ret1;
+	int off;
 	u32* outPixels;
 	SSRE_Vec4_t pixel = { 0, 0, 0, 0 };
 	SSRE_Vec4_t pixelBarycentric = { 0, 0, 0, 0 };
@@ -223,7 +224,7 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
 
 	// Find min/max width and height so we don't try to render to the full screen.
-#if 1
+#if 0
 	SSRE_Vec4_Less2( &minCoord, &points[0], &points[1] );
 	SSRE_Vec4_Less2( &minCoord, &minCoord, &points[2] );
 	SSRE_Vec4_Greater2( &maxCoord, &points[0], &points[1] );
@@ -249,64 +250,56 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 	maxPixel.x >>= SSRE_FIXED_PRECISION;
 	maxPixel.y >>= SSRE_FIXED_PRECISION;
 
+	// Screen space points.
+
 	// Determine if any primitives lie on this scanline.
 	for( y = minPixel.y, pixel.y = minCoord.y; 
 		 y <= maxPixel.y;
 		 ++y, pixel.y += invHalfRes.y )
 	{
-		outPixels = &buffer->pixels[ minPixel.x + y * buffer->w ];
-
-#if 0
-		line0.x = minPixel.x;
+		line0.x = minCoord.x;
 		line0.y = pixel.y;
-		line1.x = maxPixel.x;
+		line1.x = maxCoord.x;
 		line1.y = pixel.y;
 		ret0 = SSRE_Math_LineTriangleIntersection2( &edge0, &line0, &line1, &points[0], &points[1], &points[2], SSRE_MATH_INTERSECTION_SEGMENT );
-		ret1 = SSRE_Math_LineTriangleIntersection2( &edge1, &line1, &line0, &points[0], &points[1], &points[2], SSRE_MATH_INTERSECTION_SEGMENT );
-
-		if( ret0 == SSRE_MATH_INTERSECTION_SEGMENT && ret1 == SSRE_MATH_INTERSECTION_SEGMENT )
+		if( ret0 == SSRE_MATH_INTERSECTION_SEGMENT )
 		{
-			if( edge0.x > edge1.x )
+			ret1 = SSRE_Math_LineTriangleIntersection2( &edge1, &line1, &line0, &points[0], &points[1], &points[2], SSRE_MATH_INTERSECTION_SEGMENT );
+			if( ret1 == SSRE_MATH_INTERSECTION_SEGMENT )
 			{
-				SSRE_Fixed_t temp = edge0.x;
-				edge0.x = edge1.x;
-				edge1.x = temp;
-			}
-			for( pixel.x = edge0.x ; 
-				 pixel.x < edge1.x ;  
-				 pixel.x += invHalfRes.x, ++outPixels )
-			{
-				SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
-			
-				/*if( pixelBarycentric.x > 0 && 
-					pixelBarycentric.y > 0 && 
-					pixelBarycentric.z > 0 &&
-					pixelBarycentric.x < SSRE_FIXED_ONE && 
-					pixelBarycentric.y < SSRE_FIXED_ONE && 
-					pixelBarycentric.z < SSRE_FIXED_ONE ) */
+				if( edge0.x > edge1.x )
 				{
-					*outPixels = colour;
+					SSRE_Fixed_t temp = edge0.x;
+					edge0.x = edge1.x;
+					edge1.x = temp;
+				}
+
+				off = SSRE_Fixed_Mul( edge0.x, halfRes.x );
+				off = off + halfRes.x ;
+				off = off >> SSRE_FIXED_PRECISION;
+				outPixels = &buffer->pixels[ off + y * buffer->w ];
+				for( pixel.x = edge0.x; 
+					 pixel.x < edge1.x;  
+					 pixel.x += invHalfRes.x, ++outPixels )
+				{
+#if 0
+					SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
+			
+					// Clamp.
+					pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
+					pixelBarycentric.y = pixelBarycentric.y < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.y;
+					pixelBarycentric.z = pixelBarycentric.z < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.z;
+					pixelBarycentric.x = pixelBarycentric.x > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.x;
+					pixelBarycentric.y = pixelBarycentric.y > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.y;
+					pixelBarycentric.z = pixelBarycentric.z > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.z;
+
+					*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, colours, &pixelBarycentric.x );
+#else
+					*outPixels = colours[0];
+#endif
 				}
 			}
 		}
-#else
-		for( x = minPixel.x, pixel.x = minCoord.x; 
-			 x <= maxPixel.x; 
-			 ++x, pixel.x += invHalfRes.x, ++outPixels )
-		{
-			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
-			
-			if( pixelBarycentric.x > 0 && 
-				pixelBarycentric.y > 0 && 
-				pixelBarycentric.z > 0 &&
-				pixelBarycentric.x < SSRE_FIXED_ONE && 
-				pixelBarycentric.y < SSRE_FIXED_ONE && 
-				pixelBarycentric.z < SSRE_FIXED_ONE ) 
-			{
-				*outPixels = colour;
-			}
-		}
-#endif
 	}
 }
 
@@ -318,6 +311,12 @@ int main( int argc, char* argv[] )
 	u32 frameTicker = 0;
 	SSRE_Vec4_t tri[3];
 	SSRE_Vec4_t outTri[3];
+	u32 colours[3] = 
+	{
+		0xff0000ff,
+		0x00ff00ff,
+		0x0000ffff,
+	};
 
 	SSRE_Mat44_t worldMat;
 	SSRE_Mat44_t viewMat;
@@ -330,8 +329,8 @@ int main( int argc, char* argv[] )
 	PixelBuffer_t buffer = 
 	{
 		NULL,
-		512,
-		512
+		640,
+		480
 	};
 	u32 shouldQuit = 0;
 	buffer.pixels = (u32*)malloc( buffer.w * buffer.h * sizeof( u32 ) );
@@ -340,7 +339,7 @@ int main( int argc, char* argv[] )
 	SSRE_Mat44_Identity( &projMat );
 	SSRE_Mat44_Identity( &clipMat );
 	
-	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w, buffer.h, 0 );
+	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w * 2, buffer.h * 2, 0 );
 	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
 	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, buffer.w, buffer.h );
 
@@ -382,17 +381,17 @@ int main( int argc, char* argv[] )
 		tri[2].z = SSRE_FIXED_ZERO;
 		tri[2].w = SSRE_FIXED_ONE;
 
-		SSRE_Mat44_Rotation( &worldMat, 0, 0, frameTicker );
+		SSRE_Mat44_Rotation( &worldMat, frameTicker, 0, 0 );
 		SSRE_Mat44_Rotation( &viewMat, 0, 0, 0 );
 
 		viewMat.rows[3].x = 0;
 		viewMat.rows[3].y = 0;
 		viewMat.rows[3].z = SSRE_FIXED_ONE << 2;
 
-		SSRE_Mat44_Perspective( &projMat, 8, SSRE_FIXED_ONE, SSRE_Fixed_FromFloat( 0.5f ), SSRE_Fixed_FromFloat( 20.0f ) );
+		SSRE_Mat44_Perspective( &projMat, 8, SSRE_FIXED_ONE, SSRE_Fixed_FromFloat( 1.0f ), SSRE_Fixed_FromFloat( 20.0f ) );
 		SSRE_Mat44_Multiply( &worldViewMat, &worldMat, &viewMat );
 		SSRE_Mat44_Multiply( &clipMat, &worldViewMat, &projMat );
-
+		
 		// Transform vertices.
 		SSRE_Mat44_MultiplyVec3( &outTri[0], &clipMat, &tri[0] );
 		SSRE_Mat44_MultiplyVec3( &outTri[1], &clipMat, &tri[1] );
@@ -408,7 +407,7 @@ int main( int argc, char* argv[] )
 		outTri[1].z = 0;
 		outTri[2].z = 0;
 
-		drawTriangle( &buffer, outTri, 0xff0000ff );
+		drawTriangle( &buffer, outTri, colours );
 
 		SDL_UpdateTexture(texture, NULL, buffer.pixels, buffer.w * sizeof ( u32 ));
 		SDL_RenderClear(renderer);
@@ -416,7 +415,7 @@ int main( int argc, char* argv[] )
 		SDL_RenderPresent(renderer);
 
 		++frameCount;
-		frameTicker += 2;
+		frameTicker += 1;
 
 		if( frameCount == 10 )
 		{
