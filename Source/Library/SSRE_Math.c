@@ -78,37 +78,36 @@ void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri
 u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_t* amounts )
 {
 	int i;
-	SSRE_Fixed_t r = 0;
-	SSRE_Fixed_t g = 0;
-	SSRE_Fixed_t b = 0;
-	SSRE_Fixed_t a = 0;
+	SSRE_Vec4_t col = { 0, 0, 0, 0 };
 
 	assert( 16 == SSRE_FIXED_PRECISION ); // Hard coded to 16 bit precision at the mo.
 	
 	for( i = 0; i < num; ++i )
 	{
-		SSRE_Fixed_t rin = ( colours[i] & 0x000000ff ) << 16;
-		SSRE_Fixed_t gin = ( colours[i] & 0x0000ff00 ) << 8;
-		SSRE_Fixed_t bin = ( colours[i] & 0x00ff0000 );
-		SSRE_Fixed_t ain = ( colours[i] & 0xff000000 ) >> 8;
-		r += SSRE_Fixed_Mul( rin, amounts[i] );
-		g += SSRE_Fixed_Mul( gin, amounts[i] );
-		b += SSRE_Fixed_Mul( bin, amounts[i] );
-		a += SSRE_Fixed_Mul( ain, amounts[i] );
+		SSRE_Vec4_t in = 
+		{
+			( colours[i] & 0x000000ff ) << 16,
+			( colours[i] & 0x0000ff00 ) << 8,
+			( colours[i] & 0x00ff0000 ),
+			( colours[i] & 0xff000000 ) >> 8
+		};
+
+		SSRE_Vec4_MulScalar( &in, &in, amounts[i] );
+		SSRE_Vec4_Add( &col, &col, &in );
 	}
 
 	// Floor to int.
-	r = r >> 16;
-	g = g >> 16;
-	b = b >> 16;
-	a = a >> 16;
+	col.x = col.x >> 16;
+	col.y = col.y >> 16;
+	col.z = col.z >> 16;
+	col.w = col.w >> 16;
 
 	// Clamp.
-	r = r > 0xff ? 0xff : r;
-	g = g > 0xff ? 0xff : g;
-	b = b > 0xff ? 0xff : b;
-	a = a > 0xff ? 0xff : a;
+	col.x = col.x > 0xff ? 0xff : col.x;
+	col.y = col.y > 0xff ? 0xff : col.y;
+	col.z = col.z > 0xff ? 0xff : col.z;
+	col.w = col.w > 0xff ? 0xff : col.w;
 
 	// Pack for output.
-	return r | g << 8 | b << 16 | a << 24;
+	return col.x | col.y << 8 | col.z << 16 | col.w << 24;
 }
