@@ -23,6 +23,8 @@ THE SOFTWARE.
 */
 #include "SSRE_Math.h"
 
+#include <assert.h>
+
 void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord )
 {
 	SSRE_Vec4_t tri_BA;
@@ -71,4 +73,42 @@ void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri
 	
 	SSRE_Vec4_Add( out, &uOut, &vOut );
 	SSRE_Vec4_Add( out, out, &wOut );
+}
+
+u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_t* amounts )
+{
+	int i;
+	SSRE_Fixed_t r = 0;
+	SSRE_Fixed_t g = 0;
+	SSRE_Fixed_t b = 0;
+	SSRE_Fixed_t a = 0;
+
+	assert( 16 == SSRE_FIXED_PRECISION ); // Hard coded to 16 bit precision at the mo.
+	
+	for( i = 0; i < num; ++i )
+	{
+		SSRE_Fixed_t rin = ( colours[i] & 0x000000ff ) << 16;
+		SSRE_Fixed_t gin = ( colours[i] & 0x0000ff00 ) << 8;
+		SSRE_Fixed_t bin = ( colours[i] & 0x00ff0000 );
+		SSRE_Fixed_t ain = ( colours[i] & 0xff000000 ) >> 8;
+		r += SSRE_Fixed_Mul( rin, amounts[i] );
+		g += SSRE_Fixed_Mul( gin, amounts[i] );
+		b += SSRE_Fixed_Mul( bin, amounts[i] );
+		a += SSRE_Fixed_Mul( ain, amounts[i] );
+	}
+
+	// Floor to int.
+	r = r >> 16;
+	g = g >> 16;
+	b = b >> 16;
+	a = a >> 16;
+
+	// Clamp.
+	r = r > 0xff ? 0xff : r;
+	g = g > 0xff ? 0xff : g;
+	b = b > 0xff ? 0xff : b;
+	a = a > 0xff ? 0xff : a;
+
+	// Pack for output.
+	return r | g << 8 | b << 16 | a << 24;
 }

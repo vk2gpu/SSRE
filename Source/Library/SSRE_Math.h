@@ -45,4 +45,12 @@ void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri
  */
 void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord );
 
+/**
+ * Mix R8G8B8A8 colours.
+ * @param num Number of colours.
+ * @param colours Array of colours.
+ * @param amounts Array of amounts (0.0-1.0)
+ */
+u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_t* amounts );
+
 #endif

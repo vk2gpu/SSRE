@@ -38,6 +38,13 @@ void testDraw( u32* pixels, int width, int height )
 	SSRE_Vec4_t halfRes;
 	SSRE_Vec4_t tri[3];
 
+	u32 colours[3] = 
+	{
+		0xffff0000,
+		0xff00ff00,
+		0xff0000ff,
+	};
+
 	// Setup half res.
 	halfRes.x = ( width << SSRE_FIXED_PRECISION ) >> 1;
 	halfRes.y = ( height << SSRE_FIXED_PRECISION ) >> 1;
@@ -82,11 +89,15 @@ void testDraw( u32* pixels, int width, int height )
 
 			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, tri, &pixel );
 
-			if( pixelBarycentric.x >= 0 && pixelBarycentric.x <= SSRE_FIXED_ONE && 
-				pixelBarycentric.y >= 0 && pixelBarycentric.y <= SSRE_FIXED_ONE && 
-				pixelBarycentric.z >= 0 && pixelBarycentric.z <= SSRE_FIXED_ONE )
+			if( pixelBarycentric.x >= 0 && 
+				pixelBarycentric.y >= 0 && 
+				pixelBarycentric.z >= 0 &&
+				pixelBarycentric.x <= SSRE_FIXED_ONE && 
+				pixelBarycentric.y <= SSRE_FIXED_ONE && 
+				pixelBarycentric.z <= SSRE_FIXED_ONE ) 
 			{
-				*pixels++ = 0xffffffff;
+				u32 outColour = SSRE_Math_LerpColourR8G8B8A8( 3, colours, &pixelBarycentric.x );
+				*pixels++ = outColour;
 			}
 			else
 			{
