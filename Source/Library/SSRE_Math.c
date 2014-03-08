@@ -120,10 +120,19 @@ int SSRE_Math_LineLineIntersection2( SSRE_Vec4_t* out,
 									 const SSRE_Vec4_t* lineB1 )
 
 {
+	// NOTE: Don't think this works...check it out?
 	SSRE_Fixed_t mA, mB, cA, cB, s, t;
+	SSRE_Fixed_t xA = lineA1->x - lineA0->x;
+	SSRE_Fixed_t xB = lineB1->x - lineB0->x;
+
+	if( xA == 0 ||
+		xB == 0 )
+	{
+		return SSRE_MATH_INTERSECTION_NONE;
+	}
 	
-	mA = SSRE_Fixed_Div( lineA1->y - lineA0->y, lineA1->x - lineA0->x );
-	mB = SSRE_Fixed_Div( lineB1->y - lineB0->y, lineB1->x - lineB0->x );
+	mA = SSRE_Fixed_Div( lineA1->y - lineA0->y, xA );
+	mB = SSRE_Fixed_Div( lineB1->y - lineB0->y, xB );
 
 	if( mA == mB )
 	{

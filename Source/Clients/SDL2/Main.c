@@ -199,7 +199,8 @@ void simpleTestDrawRegioned( u32* pixels, int width, int height )
 
 void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 {
-	int x, y;
+	SSRE_Fixed_t x, y;
+	int ret0, ret1;
 	u32* outPixels;
 	SSRE_Vec4_t pixel = { 0, 0, 0, 0 };
 	SSRE_Vec4_t pixelBarycentric = { 0, 0, 0, 0 };
@@ -209,6 +210,8 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
 	SSRE_Vec4_t minPixel = { 0, 0, 0, 0 };
 	SSRE_Vec4_t maxPixel = { 0, 0, 0, 0 };
+	SSRE_Vec4_t edge0, edge1;
+	SSRE_Vec4_t line0, line1;
 
 	// Setup half res.
 	halfRes.x = ( buffer->w << SSRE_FIXED_PRECISION ) >> 1;
@@ -254,7 +257,38 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 		outPixels = &buffer->pixels[ minPixel.x + y * buffer->w ];
 
 #if 0
+		line0.x = minPixel.x;
+		line0.y = pixel.y;
+		line1.x = maxPixel.x;
+		line1.y = pixel.y;
+		ret0 = SSRE_Math_LineTriangleIntersection2( &edge0, &line0, &line1, &points[0], &points[1], &points[2], SSRE_MATH_INTERSECTION_SEGMENT );
+		ret1 = SSRE_Math_LineTriangleIntersection2( &edge1, &line1, &line0, &points[0], &points[1], &points[2], SSRE_MATH_INTERSECTION_SEGMENT );
 
+		if( ret0 == SSRE_MATH_INTERSECTION_SEGMENT && ret1 == SSRE_MATH_INTERSECTION_SEGMENT )
+		{
+			if( edge0.x > edge1.x )
+			{
+				SSRE_Fixed_t temp = edge0.x;
+				edge0.x = edge1.x;
+				edge1.x = temp;
+			}
+			for( pixel.x = edge0.x ; 
+				 pixel.x < edge1.x ;  
+				 pixel.x += invHalfRes.x, ++outPixels )
+			{
+				SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
+			
+				/*if( pixelBarycentric.x > 0 && 
+					pixelBarycentric.y > 0 && 
+					pixelBarycentric.z > 0 &&
+					pixelBarycentric.x < SSRE_FIXED_ONE && 
+					pixelBarycentric.y < SSRE_FIXED_ONE && 
+					pixelBarycentric.z < SSRE_FIXED_ONE ) */
+				{
+					*outPixels = colour;
+				}
+			}
+		}
 #else
 		for( x = minPixel.x, pixel.x = minCoord.x; 
 			 x <= maxPixel.x; 
@@ -348,7 +382,7 @@ int main( int argc, char* argv[] )
 		tri[2].z = SSRE_FIXED_ZERO;
 		tri[2].w = SSRE_FIXED_ONE;
 
-		SSRE_Mat44_Rotation( &worldMat, frameTicker, 0, 0 );
+		SSRE_Mat44_Rotation( &worldMat, 0, 0, frameTicker );
 		SSRE_Mat44_Rotation( &viewMat, 0, 0, 0 );
 
 		viewMat.rows[3].x = 0;
