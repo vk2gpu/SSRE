@@ -283,7 +283,7 @@ static SSRE_Fixed_t s_SineTable[256] =
 	0xfffff93a,		// -0.026468
 };
 
-static s_TangentTable[256] = 
+static SSRE_Fixed_t s_TangentTable[256] = 
 {
 	0x00000000,		// 0
 	0x00000648,		// 0.024548
