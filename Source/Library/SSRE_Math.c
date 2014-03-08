@@ -25,31 +25,37 @@ THE SOFTWARE.
 
 void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord )
 {
-	SSRE_Vec4_t p1minusp0;
-	SSRE_Vec4_t p2minusp0;
-	SSRE_Vec4_t p0minusCoord;
-	SSRE_Vec4_t p1minusCoord;
-	SSRE_Vec4_t p2minusCoord;
-	SSRE_Vec4_t uCross;
-	SSRE_Vec4_t vCross;
-	SSRE_Vec4_t wCross;
-	SSRE_Vec4_t triAreaCross;
-	SSRE_Fixed_t invTriArea;
+	SSRE_Vec4_t tri_BA;
+	SSRE_Vec4_t tri_CA;
+	SSRE_Vec4_t tri_CB;
+	SSRE_Vec4_t tri_AC;
+	SSRE_Vec4_t tri_PA;
+	SSRE_Vec4_t tri_PB;
+	SSRE_Vec4_t tri_PC;
+	SSRE_Vec4_t cross_ABC;
+	SSRE_Vec4_t cross_BCP;
+	SSRE_Vec4_t cross_CAP;
+	SSRE_Vec4_t cross_ABP;
+	SSRE_Fixed_t invLengthSquared;
 
-	SSRE_Vec4_Sub( &p1minusp0, &tri[1], &tri[0] );
-	SSRE_Vec4_Sub( &p2minusp0, &tri[2], &tri[0] );
-	SSRE_Vec4_Sub( &p0minusCoord, &tri[0], coord );
-	SSRE_Vec4_Sub( &p1minusCoord, &tri[1], coord );
-	SSRE_Vec4_Sub( &p2minusCoord, &tri[2], coord );
-	SSRE_Vec4_Cross3( &uCross, &p1minusCoord, &p2minusCoord );
-	SSRE_Vec4_Cross3( &vCross, &p0minusCoord, &p2minusCoord );
-	SSRE_Vec4_Cross3( &wCross, &p0minusCoord, &p1minusCoord );
-	SSRE_Vec4_Cross3( &triAreaCross, &p1minusp0, &p2minusp0 );
-	invTriArea = SSRE_Fixed_Rcp( SSRE_Vec4_Mag3( &triAreaCross ) );
-	
-	out->x = SSRE_Fixed_Mul( SSRE_Vec4_Mag3( &uCross ), invTriArea );
-	out->y = SSRE_Fixed_Mul( SSRE_Vec4_Mag3( &vCross ), invTriArea );
-	out->z = SSRE_Fixed_Mul( SSRE_Vec4_Mag3( &wCross ), invTriArea );
+	SSRE_Vec4_Sub( &tri_BA, &tri[1], &tri[0] );
+	SSRE_Vec4_Sub( &tri_CA, &tri[2], &tri[0] );
+	SSRE_Vec4_Sub( &tri_CB, &tri[2], &tri[1] );
+	SSRE_Vec4_Sub( &tri_AC, &tri[0], &tri[2] );
+	SSRE_Vec4_Sub( &tri_PA, coord, &tri[0] );
+	SSRE_Vec4_Sub( &tri_PB, coord, &tri[1] );
+	SSRE_Vec4_Sub( &tri_PC, coord, &tri[2] );
+
+	SSRE_Vec4_Cross3( &cross_ABC, &tri_BA, &tri_CA );
+	SSRE_Vec4_Cross3( &cross_BCP, &tri_CB, &tri_PB );
+	SSRE_Vec4_Cross3( &cross_CAP, &tri_AC, &tri_PC );
+	SSRE_Vec4_Cross3( &cross_ABP, &tri_BA, &tri_PA );
+
+	invLengthSquared = SSRE_Fixed_Rcp( SSRE_Vec4_MagSqr3( &cross_ABC ) );
+
+	out->x = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_BCP ), invLengthSquared );
+	out->y = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_CAP ), invLengthSquared );
+	out->z = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_ABP ), invLengthSquared );
 	out->w = 0;
 }
 

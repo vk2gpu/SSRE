@@ -25,7 +25,8 @@ THE SOFTWARE.
 
 SSRE_Fixed_t SSRE_Fixed_Mul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
 {
-	return ( (s64)lhs * (s64)rhs ) >> SSRE_FIXED_PRECISION;
+	s64 value = (s64)lhs * (s64)rhs;
+	return ( value ) >> SSRE_FIXED_PRECISION;
 }
 
 SSRE_Fixed_t SSRE_Fixed_Div( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
@@ -35,8 +36,9 @@ SSRE_Fixed_t SSRE_Fixed_Div( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
 
 SSRE_Fixed_t SSRE_Fixed_Rcp( SSRE_Fixed_t lhs )
 {
-	// TODO: Don't use divide...can to better.
-	return SSRE_Fixed_Div( SSRE_FIXED_ONE, lhs );
+	// TODO: Don't use divide...can to better?
+	lhs =  SSRE_Fixed_Div( SSRE_FIXED_ONE, lhs );
+	return lhs;
 }
 
 SSRE_Fixed_t SSRE_Fixed_Sqrt( SSRE_Fixed_t lhs )

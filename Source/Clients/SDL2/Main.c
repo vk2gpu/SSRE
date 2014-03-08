@@ -27,72 +27,73 @@ THE SOFTWARE.
 
 #include <memory.h>
 #include <malloc.h>
-
+#include <math.h>
 
 void testDraw( u32* pixels, int width, int height )
 {
-	int i;
+	static float ticker = 0.0f;
+	int x, y;
+	SSRE_Vec4_t pixel;
+	SSRE_Vec4_t pixelBarycentric;
 	SSRE_Vec4_t halfRes;
 	SSRE_Vec4_t tri[3];
-	SSRE_Vec4_t barycentricTest;
-	SSRE_Vec4_t central;
-	central.x = 0;
-	central.y = 0;
-	central.z = 0;
-	central.w = 0;
 
 	// Setup half res.
 	halfRes.x = ( width << SSRE_FIXED_PRECISION ) >> 1;
 	halfRes.y = ( height << SSRE_FIXED_PRECISION ) >> 1;
-	halfRes.z = 0;
-	halfRes.w = 0;
+	halfRes.z = 1;
+	halfRes.w = 1;
 
+	ticker += 0.05f;
+	
 	// Setup simple triangle.
-	tri[0].x = 0;
-	tri[0].y = SSRE_Fixed_FromFloat( -0.5f );
+	tri[0].x = SSRE_Fixed_FromFloat( sinf( ticker ) * 0.5f );
+	tri[0].y = SSRE_Fixed_FromFloat( cosf( ticker ) * 0.5f );
 	tri[0].z = 0;
 	tri[0].w = 0;
 
 	tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
-	tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
+	tri[1].y = SSRE_Fixed_FromFloat( 0.0f );
 	tri[1].z = 0;
 	tri[1].w = 0;
 
 	tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
-	tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
+	tri[2].y = SSRE_Fixed_FromFloat( 0.0f );
 	tri[2].z = 0;
 	tri[2].w = 0;
 
-	SSRE_Vec4_Add( &central, &tri[0], &tri[1] );
-	central.x >>= 1;
-	central.y >>= 1;
-	central.z >>= 1;
-	central.w >>= 1;
-
-	// 
-	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &tri[0] );
-	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
-
-
-	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &tri[1] );
-	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
-
-	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &tri[2] );
-	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
-
-	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &central );
-	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
-
-	// Convert from clip space to screen space.
-	for( i = 0; i < 3; ++i )
+	// Iterate over all pixels and check if we are in bounds or not.
+	for( y = 0; y < height; ++y )
 	{
-		// Scale up.
-		SSRE_Vec4_Mul( &tri[i], &tri[i], &halfRes );
+		for( x = 0; x < width; ++x )
+		{
+			// Convert screen space to clip space to keep from going beyond our 16 bit range.
+			pixel.x = x << SSRE_FIXED_PRECISION;
+			pixel.y = y << SSRE_FIXED_PRECISION;
+			pixel.z = 1;
+			pixel.w = 1;
 
-		// Offset.
-		SSRE_Vec4_Add( &tri[i], &tri[i], &halfRes );
-	}
-	
+			// Offset.
+			SSRE_Vec4_Sub( &pixel, &pixel, &halfRes );
+
+			// Scale up.
+			SSRE_Vec4_Div( &pixel, &pixel, &halfRes );
+		
+
+			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, tri, &pixel );
+
+			if( pixelBarycentric.x >= 0 && pixelBarycentric.x <= SSRE_FIXED_ONE && 
+				pixelBarycentric.y >= 0 && pixelBarycentric.y <= SSRE_FIXED_ONE && 
+				pixelBarycentric.z >= 0 && pixelBarycentric.z <= SSRE_FIXED_ONE )
+			{
+				*pixels++ = 0xffffffff;
+			}
+			else
+			{
+				*pixels++ = 0x0;
+			}
+		}
+	}	
 }
 
 
