@@ -25,9 +25,19 @@ THE SOFTWARE.
 #include <SDL.h>
 #include <SSRE.h>
 
+#include <memory.h>
+#include <malloc.h>
+
 int main( int argc, char* argv[] )
 {
+	int width = 640;
+	int height = 480;
+
 	SDL_Window* window = NULL;
+	SDL_Renderer* renderer = NULL;
+	SDL_Texture* texture = NULL;
+	u32* pixels = (u32*)malloc( width * height * sizeof( u32 ) );
+	u32 shouldQuit = 0;
 	SSRE_Fixed_t fixedA = SSRE_Fixed_FromFloat( 100.0f );
 	SSRE_Fixed_t fixedB = SSRE_Fixed_Sqrt( fixedA );
 	float val = 0.0f;
@@ -47,14 +57,39 @@ int main( int argc, char* argv[] )
 		SSRE_Fixed_FromFloat( 0.0f ),
 	};
 
-	SSRE_Vec4_t vecC;
+	//SSRE_Vec4_t vecC;
 
 	//SSRE_Vec4_Reflect( &vecC, &vecA, &vecB );
 	//val = SSRE_Fixed_ToFloat( vecA.x );
 
+	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0 );
+	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
+	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height );
 
-	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 640, 480, 0 );
+	do
+	{
+		SDL_Event event;
 
+		if( SDL_PollEvent( &event ) )
+		{
+			switch( event.type )
+			{
+			case SDL_QUIT:
+				shouldQuit = 1;
+				break;
+			default:
+				break;
+			}
+		}
+
+		SDL_UpdateTexture(texture, NULL, pixels, width * sizeof ( u32 ));
+		SDL_RenderClear(renderer);
+		SDL_RenderCopy(renderer, texture, NULL, NULL);
+		SDL_RenderPresent(renderer);
+	}
+	while( !shouldQuit );
+
+	free( pixels );
 
 	return 0;
 }

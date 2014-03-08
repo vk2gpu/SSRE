@@ -36,4 +36,3 @@ void SSRE_GetVersion( int* outMajor, int* outMinor, int* outRevision )
 	*outMinor = 0;
 	*outRevision = 0;
 }
-
