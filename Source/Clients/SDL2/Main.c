@@ -220,10 +220,17 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
 
 	// Find min/max width and height so we don't try to render to the full screen.
+#if 1
 	SSRE_Vec4_Less2( &minCoord, &points[0], &points[1] );
 	SSRE_Vec4_Less2( &minCoord, &minCoord, &points[2] );
 	SSRE_Vec4_Greater2( &maxCoord, &points[0], &points[1] );
 	SSRE_Vec4_Greater2( &maxCoord, &maxCoord, &points[2] );
+#else
+	minCoord.x = -SSRE_FIXED_ONE;
+	minCoord.y = -SSRE_FIXED_ONE;
+	maxCoord.x = SSRE_FIXED_ONE;
+	maxCoord.y = SSRE_FIXED_ONE;
+#endif 
 
 	// Scale down.
 	SSRE_Vec4_Mul2( &minPixel, &minCoord, &halfRes );
@@ -239,7 +246,6 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 	maxPixel.x >>= SSRE_FIXED_PRECISION;
 	maxPixel.y >>= SSRE_FIXED_PRECISION;
 
-
 	// Determine if any primitives lie on this scanline.
 	for( y = minPixel.y, pixel.y = minCoord.y; 
 		 y <= maxPixel.y;
@@ -247,22 +253,26 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
 	{
 		outPixels = &buffer->pixels[ minPixel.x + y * buffer->w ];
 
+#if 0
+
+#else
 		for( x = minPixel.x, pixel.x = minCoord.x; 
 			 x <= maxPixel.x; 
 			 ++x, pixel.x += invHalfRes.x, ++outPixels )
 		{
 			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
 			
-			if( pixelBarycentric.x >= 0 && 
-				pixelBarycentric.y >= 0 && 
-				pixelBarycentric.z >= 0 &&
-				pixelBarycentric.x <= SSRE_FIXED_ONE && 
-				pixelBarycentric.y <= SSRE_FIXED_ONE && 
-				pixelBarycentric.z <= SSRE_FIXED_ONE ) 
+			if( pixelBarycentric.x > 0 && 
+				pixelBarycentric.y > 0 && 
+				pixelBarycentric.z > 0 &&
+				pixelBarycentric.x < SSRE_FIXED_ONE && 
+				pixelBarycentric.y < SSRE_FIXED_ONE && 
+				pixelBarycentric.z < SSRE_FIXED_ONE ) 
 			{
 				*outPixels = colour;
 			}
 		}
+#endif
 	}
 }
 
@@ -271,19 +281,31 @@ int main( int argc, char* argv[] )
 	u32 timerStart;
 	u32 timerEnd;
 	u32 frameCount = 0;
+	u32 frameTicker = 0;
 	SSRE_Vec4_t tri[3];
+	SSRE_Vec4_t outTri[3];
+
+	SSRE_Mat44_t worldMat;
+	SSRE_Mat44_t viewMat;
+	SSRE_Mat44_t worldViewMat;
+	SSRE_Mat44_t projMat;
+	SSRE_Mat44_t clipMat;
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* texture = NULL;
 	PixelBuffer_t buffer = 
 	{
 		NULL,
-		640,
-		480
+		512,
+		512
 	};
 	u32 shouldQuit = 0;
 	buffer.pixels = (u32*)malloc( buffer.w * buffer.h * sizeof( u32 ) );
-
+	SSRE_Mat44_Identity( &worldMat );
+	SSRE_Mat44_Identity( &viewMat );
+	SSRE_Mat44_Identity( &projMat );
+	SSRE_Mat44_Identity( &clipMat );
+	
 	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w, buffer.h, 0 );
 	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
 	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, buffer.w, buffer.h );
@@ -313,19 +335,46 @@ int main( int argc, char* argv[] )
 
 		tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
 		tri[0].y = SSRE_Fixed_FromFloat( -0.5f );
-		tri[0].z = 0;
-		tri[0].w = 0;
+		tri[0].z = SSRE_FIXED_ZERO;
+		tri[0].w = SSRE_FIXED_ONE;
 
 		tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
 		tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
-		tri[1].z = 0;
-		tri[1].w = 0;
+		tri[1].z = SSRE_FIXED_ZERO;
+		tri[1].w = SSRE_FIXED_ONE;
 
 		tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
 		tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
-		tri[2].z = 0;
-		tri[2].w = 0;
-		drawTriangle( &buffer, tri, 0xff0000ff );
+		tri[2].z = SSRE_FIXED_ZERO;
+		tri[2].w = SSRE_FIXED_ONE;
+
+		SSRE_Mat44_Rotation( &worldMat, frameTicker, 0, 0 );
+		SSRE_Mat44_Rotation( &viewMat, 0, 0, 0 );
+
+		viewMat.rows[3].x = 0;
+		viewMat.rows[3].y = 0;
+		viewMat.rows[3].z = SSRE_FIXED_ONE << 2;
+
+		SSRE_Mat44_Perspective( &projMat, 8, SSRE_FIXED_ONE, SSRE_Fixed_FromFloat( 0.5f ), SSRE_Fixed_FromFloat( 20.0f ) );
+		SSRE_Mat44_Multiply( &worldViewMat, &worldMat, &viewMat );
+		SSRE_Mat44_Multiply( &clipMat, &worldViewMat, &projMat );
+
+		// Transform vertices.
+		SSRE_Mat44_MultiplyVec3( &outTri[0], &clipMat, &tri[0] );
+		SSRE_Mat44_MultiplyVec3( &outTri[1], &clipMat, &tri[1] );
+		SSRE_Mat44_MultiplyVec3( &outTri[2], &clipMat, &tri[2] );
+
+		// W divide.
+		SSRE_Vec4_DivScalar3( &outTri[0], &outTri[0], outTri[0].w );
+		SSRE_Vec4_DivScalar3( &outTri[1], &outTri[1], outTri[1].w );
+		SSRE_Vec4_DivScalar3( &outTri[2], &outTri[2], outTri[2].w );
+
+		// Flatten.
+		outTri[0].z = 0;
+		outTri[1].z = 0;
+		outTri[2].z = 0;
+
+		drawTriangle( &buffer, outTri, 0xff0000ff );
 
 		SDL_UpdateTexture(texture, NULL, buffer.pixels, buffer.w * sizeof ( u32 ));
 		SDL_RenderClear(renderer);
@@ -333,6 +382,7 @@ int main( int argc, char* argv[] )
 		SDL_RenderPresent(renderer);
 
 		++frameCount;
+		frameTicker += 2;
 
 		if( frameCount == 10 )
 		{

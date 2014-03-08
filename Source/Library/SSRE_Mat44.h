@@ -56,12 +56,42 @@ void SSRE_Mat44_Rotation( SSRE_Mat44_t* out, int yaw, int pitch, int roll );
 void SSRE_Mat44_GetColumn( SSRE_Vec4_t* out, const SSRE_Mat44_t* in, int column );
 
 /**
- * Multiple.
+ * Multiply.
  * @param out
  */
 void SSRE_Mat44_Multiply( SSRE_Mat44_t* out, const SSRE_Mat44_t* lhs, const SSRE_Mat44_t* rhs );
 
+/**
+ * Multiply vec.
+ * @param out
+ */
+void SSRE_Mat44_MultiplyVec3( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Mat44_MultiplyVec4( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs );
 
+/**
+ * Frustum.
+ * @param l left
+ * @param r right
+ * @param b bottom
+ * @param t top
+ * @param n near
+ * @param f far
+ */
+void SSRE_Mat44_Frustum( SSRE_Mat44_t* out, 
+						 SSRE_Fixed_t l, 
+						 SSRE_Fixed_t r, 
+						 SSRE_Fixed_t b, 
+						 SSRE_Fixed_t t,
+						 SSRE_Fixed_t n, 
+						 SSRE_Fixed_t f );
 
+/**
+ * Perspective projection.
+ */
+void SSRE_Mat44_Perspective( SSRE_Mat44_t* out,
+							 int fov,
+							 SSRE_Fixed_t aspect,
+							 SSRE_Fixed_t n,
+							 SSRE_Fixed_t f );
 #endif
 

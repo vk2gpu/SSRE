@@ -76,7 +76,7 @@ void SSRE_Mat44_Rotation( SSRE_Mat44_t* out, int yaw, int pitch, int roll )
 	out->rows[3].x = 0;
 	out->rows[3].y = 0;
 	out->rows[3].z = 0;
-	out->rows[3].w = 1;
+	out->rows[3].w = SSRE_FIXED_ONE;
 }
 
 void SSRE_Mat44_GetColumn( SSRE_Vec4_t* out, const SSRE_Mat44_t* in, int column )
@@ -117,4 +117,60 @@ void SSRE_Mat44_Multiply( SSRE_Mat44_t* out, const SSRE_Mat44_t* lhs, const SSRE
 	out->rows[1].w = SSRE_Vec4_Dot( &column, &lhs->rows[1] );
 	out->rows[2].w = SSRE_Vec4_Dot( &column, &lhs->rows[2] );
 	out->rows[3].w = SSRE_Vec4_Dot( &column, &lhs->rows[3] );
+}
+
+void SSRE_Mat44_MultiplyVec3( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].x ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].x ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].x ) + lhs->rows[3].x;
+	out->y = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].y ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].y ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].y ) + lhs->rows[3].y;
+	out->z = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].z ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].z ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].z ) + lhs->rows[3].z;
+	out->w = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].w ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].w ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].w ) + lhs->rows[3].w;
+}
+
+void SSRE_Mat44_MultiplyVec4( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].x ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].x ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].x ) + SSRE_Fixed_Mul( rhs->w, lhs->rows[3].x );
+	out->y = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].y ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].y ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].y ) + SSRE_Fixed_Mul( rhs->w, lhs->rows[3].y );
+	out->z = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].z ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].z ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].z ) + SSRE_Fixed_Mul( rhs->w, lhs->rows[3].z );
+	out->w = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].w ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].w ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].w ) + SSRE_Fixed_Mul( rhs->w, lhs->rows[3].w );
+}
+
+void SSRE_Mat44_Frustum( SSRE_Mat44_t* out, 
+						 SSRE_Fixed_t l, 
+						 SSRE_Fixed_t r, 
+						 SSRE_Fixed_t b, 
+						 SSRE_Fixed_t t,
+						 SSRE_Fixed_t n, 
+						 SSRE_Fixed_t f )
+{
+	out->rows[0].x = SSRE_Fixed_Div( n << 1, ( r - l ) );
+	out->rows[0].y = SSRE_FIXED_ZERO;
+	out->rows[0].z = SSRE_FIXED_ZERO;
+	out->rows[0].w = SSRE_FIXED_ZERO;
+
+	out->rows[1].x = SSRE_FIXED_ZERO;
+	out->rows[1].y = SSRE_Fixed_Div( n << 1, ( b - t ) );
+	out->rows[1].z = SSRE_FIXED_ZERO;
+	out->rows[1].w = SSRE_FIXED_ZERO;
+
+	out->rows[2].x = SSRE_Fixed_Div( -( r + l ), ( r - l ) );
+	out->rows[2].y = SSRE_Fixed_Div( -( t + b ), ( b - t ) );
+	out->rows[2].z = SSRE_Fixed_Div( ( f + n ), ( f - n ) );
+	out->rows[2].w = SSRE_FIXED_ONE;
+
+	out->rows[3].x = SSRE_FIXED_ZERO;
+	out->rows[3].y = SSRE_FIXED_ZERO;
+	out->rows[3].z = SSRE_Fixed_Div( -SSRE_Fixed_Mul( f, n ) << 1, ( f - n ) );
+	out->rows[3].w = SSRE_FIXED_ZERO;
+}
+
+void SSRE_Mat44_Perspective( SSRE_Mat44_t* out,
+							 int fov,
+							 SSRE_Fixed_t aspect,
+							 SSRE_Fixed_t n,
+							 SSRE_Fixed_t f )
+{
+	SSRE_Fixed_t h = SSRE_Fixed_Mul( SSRE_Fixed_Tan( fov ), SSRE_FIXED_TWO );
+	SSRE_Fixed_t w = SSRE_Fixed_Div( h, aspect );
+	SSRE_Mat44_Frustum( out, -w, w, h, -h, n, f );
 }

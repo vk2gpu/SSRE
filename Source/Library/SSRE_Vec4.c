@@ -172,23 +172,32 @@ void SSRE_Vec4_FastMulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fix
 
 void SSRE_Vec4_DivScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
 {
-	out->x = SSRE_Fixed_Div( lhs->x, rhs );
-	out->y = SSRE_Fixed_Div( lhs->y, rhs );
+	if( rhs != 0 )
+	{
+		out->x = SSRE_Fixed_Div( lhs->x, rhs );
+		out->y = SSRE_Fixed_Div( lhs->y, rhs );
+	}
 }
 
 void SSRE_Vec4_DivScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
 {
-	out->x = SSRE_Fixed_Div( lhs->x, rhs );
-	out->y = SSRE_Fixed_Div( lhs->y, rhs );
-	out->z = SSRE_Fixed_Div( lhs->z, rhs );
+	if( rhs != 0 )
+	{
+		out->x = SSRE_Fixed_Div( lhs->x, rhs );
+		out->y = SSRE_Fixed_Div( lhs->y, rhs );
+		out->z = SSRE_Fixed_Div( lhs->z, rhs );
+	}
 }
 
 void SSRE_Vec4_DivScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
 {
-	out->x = SSRE_Fixed_Div( lhs->x, rhs );
-	out->y = SSRE_Fixed_Div( lhs->y, rhs );
-	out->z = SSRE_Fixed_Div( lhs->z, rhs );
-	out->w = SSRE_Fixed_Div( lhs->w, rhs );
+	if( rhs != 0 )
+	{
+		out->x = SSRE_Fixed_Div( lhs->x, rhs );
+		out->y = SSRE_Fixed_Div( lhs->y, rhs );
+		out->z = SSRE_Fixed_Div( lhs->z, rhs );
+		out->w = SSRE_Fixed_Div( lhs->w, rhs );
+	}
 }
 
 void SSRE_Vec4_Rcp2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs )
