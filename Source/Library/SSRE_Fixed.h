@@ -110,6 +110,12 @@ SSRE_Fixed_t SSRE_Fixed_Sin( int lhs );
 SSRE_Fixed_t SSRE_Fixed_Cos( int lhs );
 
 /**
+ * Fixed point tangent.
+ * @param lhs Range of 0-255. Will be wrapped.
+ */
+SSRE_Fixed_t SSRE_Fixed_Tan( int lhs );
+
+/**
  * Functions.
  */
 static SSRE_Fixed_t SSRE_Fixed_Mul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
