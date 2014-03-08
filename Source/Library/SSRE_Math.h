@@ -21,20 +21,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef __SSRE_H__
-#define __SSRE_H__
+#ifndef __SSRE_MATH_H__
+#define __SSRE_MATH_H__
 
 #include "SSRE_Types.h"
 #include "SSRE_Fixed.h"
 #include "SSRE_Vec4.h"
-#include "SSRE_Math.h"
+
 
 /**
- * Get library version.
- * @param outMajor Pointer for where to write major version.
- * @param outMajor Pointer for where to write minor version.
- * @param outMajor Pointer for where to write revision version.
+ * Cartesian to Barycentric (3D)
+ * @param out Output barycentric coordinates.
+ * @param tri Pointer to 3 coordinates for triangle.
+ * @param coord Cartesian coordinate.
  */
-void SSRE_GetVersion( int* outMajor, int* outMinor, int* outRevision );
+void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord );
 
-#endif // __SSRE_H__
+/**
+ * Barycentric to Cartesian (3D)
+ * @param out Output cartesian coordinates.
+ * @param tri Pointer to 3 coordinates for triangle.
+ * @param coord Barycentric coordinate.
+ */
+void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord );
+
+#endif

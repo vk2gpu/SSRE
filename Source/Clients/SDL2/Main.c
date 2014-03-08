@@ -28,6 +28,74 @@ THE SOFTWARE.
 #include <memory.h>
 #include <malloc.h>
 
+
+void testDraw( u32* pixels, int width, int height )
+{
+	int i;
+	SSRE_Vec4_t halfRes;
+	SSRE_Vec4_t tri[3];
+	SSRE_Vec4_t barycentricTest;
+	SSRE_Vec4_t central;
+	central.x = 0;
+	central.y = 0;
+	central.z = 0;
+	central.w = 0;
+
+	// Setup half res.
+	halfRes.x = ( width << SSRE_FIXED_PRECISION ) >> 1;
+	halfRes.y = ( height << SSRE_FIXED_PRECISION ) >> 1;
+	halfRes.z = 0;
+	halfRes.w = 0;
+
+	// Setup simple triangle.
+	tri[0].x = 0;
+	tri[0].y = SSRE_Fixed_FromFloat( -0.5f );
+	tri[0].z = 0;
+	tri[0].w = 0;
+
+	tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
+	tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
+	tri[1].z = 0;
+	tri[1].w = 0;
+
+	tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
+	tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
+	tri[2].z = 0;
+	tri[2].w = 0;
+
+	SSRE_Vec4_Add( &central, &tri[0], &tri[1] );
+	central.x >>= 1;
+	central.y >>= 1;
+	central.z >>= 1;
+	central.w >>= 1;
+
+	// 
+	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &tri[0] );
+	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
+
+
+	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &tri[1] );
+	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
+
+	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &tri[2] );
+	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
+
+	SSRE_Math_CartesianToBarycentric3( &barycentricTest, tri, &central );
+	SSRE_Math_BarycentricToCartesian3( &barycentricTest, tri, &barycentricTest );
+
+	// Convert from clip space to screen space.
+	for( i = 0; i < 3; ++i )
+	{
+		// Scale up.
+		SSRE_Vec4_Mul( &tri[i], &tri[i], &halfRes );
+
+		// Offset.
+		SSRE_Vec4_Add( &tri[i], &tri[i], &halfRes );
+	}
+	
+}
+
+
 int main( int argc, char* argv[] )
 {
 	int width = 640;
@@ -81,6 +149,8 @@ int main( int argc, char* argv[] )
 				break;
 			}
 		}
+
+		testDraw( pixels, width, height );
 
 		SDL_UpdateTexture(texture, NULL, pixels, width * sizeof ( u32 ));
 		SDL_RenderClear(renderer);
