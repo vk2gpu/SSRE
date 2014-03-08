@@ -49,7 +49,7 @@ int main( int argc, char* argv[] )
 
 	SSRE_Vec4_t vecC;
 
-	SSRE_Vec4_Reflect( &vecC, &vecA, &vecB );
+	//SSRE_Vec4_Reflect( &vecC, &vecA, &vecB );
 	//val = SSRE_Fixed_ToFloat( vecA.x );
 
 
