@@ -24,6 +24,9 @@ THE SOFTWARE.
 #ifndef __SSRE_TYPES_H__
 #define __SSRE_TYPES_H__
 
+#include <assert.h>
+
+
 /**
  * Basic types.
  */

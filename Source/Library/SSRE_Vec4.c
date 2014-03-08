@@ -23,8 +23,6 @@ THE SOFTWARE.
 */
 #include "SSRE_Vec4.h"
 
-#include <assert.h>
-
 void SSRE_Vec4_Add2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	out->x = lhs->x + rhs->x;
@@ -88,6 +86,27 @@ void SSRE_Vec4_Mul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
 	out->w = SSRE_Fixed_Mul( lhs->w, rhs->w );
 }
 
+void SSRE_Vec4_FastMul2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_FastMul( lhs->x, rhs->x );
+	out->y = SSRE_Fixed_FastMul( lhs->y, rhs->y );
+}
+
+void SSRE_Vec4_FastMul3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_FastMul( lhs->x, rhs->x );
+	out->y = SSRE_Fixed_FastMul( lhs->y, rhs->y );
+	out->z = SSRE_Fixed_FastMul( lhs->z, rhs->z );
+}
+
+void SSRE_Vec4_FastMul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_FastMul( lhs->x, rhs->x );
+	out->y = SSRE_Fixed_FastMul( lhs->y, rhs->y );
+	out->z = SSRE_Fixed_FastMul( lhs->z, rhs->z );
+	out->w = SSRE_Fixed_FastMul( lhs->w, rhs->w );
+}
+
 void SSRE_Vec4_Div2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	out->x = SSRE_Fixed_Div( lhs->x, rhs->x );
@@ -128,6 +147,27 @@ void SSRE_Vec4_MulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t
 	out->y = SSRE_Fixed_Mul( lhs->y, rhs );
 	out->z = SSRE_Fixed_Mul( lhs->z, rhs );
 	out->w = SSRE_Fixed_Mul( lhs->w, rhs );
+}
+
+void SSRE_Vec4_FastMulScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
+{
+	out->x = SSRE_Fixed_FastMul( lhs->x, rhs );
+	out->y = SSRE_Fixed_FastMul( lhs->y, rhs );
+}
+
+void SSRE_Vec4_FastMulScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
+{
+	out->x = SSRE_Fixed_FastMul( lhs->x, rhs );
+	out->y = SSRE_Fixed_FastMul( lhs->y, rhs );
+	out->z = SSRE_Fixed_FastMul( lhs->z, rhs );
+}
+
+void SSRE_Vec4_FastMulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
+{
+	out->x = SSRE_Fixed_FastMul( lhs->x, rhs );
+	out->y = SSRE_Fixed_FastMul( lhs->y, rhs );
+	out->z = SSRE_Fixed_FastMul( lhs->z, rhs );
+	out->w = SSRE_Fixed_FastMul( lhs->w, rhs );
 }
 
 void SSRE_Vec4_DivScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
@@ -259,3 +299,44 @@ void SSRE_Vec4_Nrm( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs )
 	SSRE_Vec4_MulScalar( out, lhs, invMag );
 }
 
+void SSRE_Vec4_Less2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x < rhs->x ? lhs->x : rhs->x;
+	out->y = lhs->y < rhs->y ? lhs->y : rhs->y;
+}
+
+void SSRE_Vec4_Less3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x < rhs->x ? lhs->x : rhs->x;
+	out->y = lhs->y < rhs->y ? lhs->y : rhs->y;
+	out->z = lhs->z < rhs->z ? lhs->z : rhs->z;
+}
+
+void SSRE_Vec4_Less( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x < rhs->x ? lhs->x : rhs->x;
+	out->y = lhs->y < rhs->y ? lhs->y : rhs->y;
+	out->z = lhs->z < rhs->z ? lhs->z : rhs->z;
+	out->w = lhs->w < rhs->w ? lhs->w : rhs->w;
+}
+
+void SSRE_Vec4_Greater2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x > rhs->x ? lhs->x : rhs->x;
+	out->y = lhs->y > rhs->y ? lhs->y : rhs->y;
+}
+
+void SSRE_Vec4_Greater3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x > rhs->x ? lhs->x : rhs->x;
+	out->y = lhs->y > rhs->y ? lhs->y : rhs->y;
+	out->z = lhs->z > rhs->z ? lhs->z : rhs->z;
+}
+
+void SSRE_Vec4_Greater( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x > rhs->x ? lhs->x : rhs->x;
+	out->y = lhs->y > rhs->y ? lhs->y : rhs->y;
+	out->z = lhs->z > rhs->z ? lhs->z : rhs->z;
+	out->w = lhs->w > rhs->w ? lhs->w : rhs->w;
+}

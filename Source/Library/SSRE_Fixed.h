@@ -40,14 +40,6 @@ typedef s32 SSRE_Fixed_t;
 #define SSRE_FIXED_FLOAT_STEP			( 1.0f / (float)(1 << SSRE_FIXED_PRECISION ) )
 
 /**
- * Common values.
- */
-#define SSRE_FIXED_ZERO					( (SSRE_Fixed_t)( 0 ) )
-#define SSRE_FIXED_ONE					( (SSRE_Fixed_t)( 1 << SSRE_FIXED_PRECISION ) )
-#define SSRE_FIXED_TWO					( (SSRE_Fixed_t)( 2 << SSRE_FIXED_PRECISION ) )
-#define SSRE_FIXED_HALF					( (SSRE_Fixed_t)( 2 << ( SSRE_FIXED_PRECISION - 1 ) ) )
-
-/**
  * Float to fixed conversion macro.
  * @param _val float value.
  */
@@ -61,11 +53,29 @@ typedef s32 SSRE_Fixed_t;
 	( (float)( ( (SSRE_Fixed_t)_val ) * SSRE_FIXED_FLOAT_STEP ) )
 
 /**
+ * Common values.
+ */
+#define SSRE_FIXED_ZERO					( (SSRE_Fixed_t)( 0 ) )
+#define SSRE_FIXED_ONE					( (SSRE_Fixed_t)( 1 << SSRE_FIXED_PRECISION ) )
+#define SSRE_FIXED_TWO					( (SSRE_Fixed_t)( 2 << SSRE_FIXED_PRECISION ) )
+#define SSRE_FIXED_HALF					( (SSRE_Fixed_t)( 2 << ( SSRE_FIXED_PRECISION - 1 ) ) )
+#define SSRE_FIXED_PI					( SSRE_Fixed_FromFloat( 3.14159265359f ) )
+#define SSRE_FIXED_TAU					( SSRE_Fixed_FromFloat( 2.0f * 3.14159265359f ) )
+#define SSRE_FIXED_E					( SSRE_Fixed_FromFloat( 2.71828182845904523536028747135266249775724709369995f ) )
+
+/**
  * Fixed point multiply.
  * @param lhs
  * @param rhs
  */
 SSRE_Fixed_t SSRE_Fixed_Mul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs );
+
+/**
+ * Fixed point fast multiply.
+ * @param lhs
+ * @param rhs
+ */
+SSRE_Fixed_t SSRE_Fixed_FastMul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs );
 
 /**
  * Fixed point divide.
@@ -86,5 +96,41 @@ SSRE_Fixed_t SSRE_Fixed_Rcp( SSRE_Fixed_t lhs );
  * @param lhs
  */
 SSRE_Fixed_t SSRE_Fixed_Sqrt( SSRE_Fixed_t lhs );
+
+/**
+ * Fixed point sine.
+ * @param lhs Range of 0-255. Will be wrapped.
+ */
+SSRE_Fixed_t SSRE_Fixed_Sin( int lhs );
+
+/**
+ * Fixed point cosine.
+ * @param lhs Range of 0-255. Will be wrapped.
+ */
+SSRE_Fixed_t SSRE_Fixed_Cos( int lhs );
+
+/**
+ * Functions.
+ */
+static SSRE_Fixed_t SSRE_Fixed_Mul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
+{
+	s64 value = (s64)lhs * (s64)rhs;
+	return (SSRE_Fixed_t)( ( value ) >> SSRE_FIXED_PRECISION );
+}
+
+static SSRE_Fixed_t SSRE_Fixed_FastMul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
+{
+	return ( lhs >> SSRE_FIXED_HALF_PRECISION ) * ( rhs >> SSRE_FIXED_HALF_PRECISION );
+}
+
+static SSRE_Fixed_t SSRE_Fixed_Div( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
+{
+	return (SSRE_Fixed_t)( ( ( (s64)lhs << SSRE_FIXED_DOUBLE_PRECISION ) / (s64)rhs ) >> SSRE_FIXED_PRECISION );
+}
+
+static SSRE_Fixed_t SSRE_Fixed_Rcp( SSRE_Fixed_t lhs )
+{
+	return lhs != 0 ? SSRE_Fixed_Div( SSRE_FIXED_ONE, lhs ) : 0;
+}
 
 #endif

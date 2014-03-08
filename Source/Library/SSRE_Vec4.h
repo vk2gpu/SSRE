@@ -68,6 +68,16 @@ void SSRE_Vec4_Mul3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t
 void SSRE_Vec4_Mul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
+ * Fast Mul vec4 by another.
+ * @param out Output vector.
+ * @param lhs
+ * @param rhs
+ */
+void SSRE_Vec4_FastMul2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Vec4_FastMul3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Vec4_FastMul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+
+/**
  * Div vec4 by another.
  * @param out Output vector.
  * @param lhs
@@ -86,6 +96,16 @@ void SSRE_Vec4_Div( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
 void SSRE_Vec4_MulScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
 void SSRE_Vec4_MulScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
 void SSRE_Vec4_MulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
+
+/**
+ * FastMul vec4 by scalar.
+ * @param out Output vector.
+ * @param lhs
+ * @param rhs
+ */
+void SSRE_Vec4_FastMulScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
+void SSRE_Vec4_FastMulScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
+void SSRE_Vec4_FastMulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
 
 
 /**
@@ -149,5 +169,21 @@ SSRE_Fixed_t SSRE_Vec4_Mag( const SSRE_Vec4_t* lhs );
 void SSRE_Vec4_Nrm2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs );
 void SSRE_Vec4_Nrm3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs );
 void SSRE_Vec4_Nrm( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs );
+
+/**
+ * Less?
+ * @param lhs
+ */
+void SSRE_Vec4_Less2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Less3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Less( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs );
+
+/**
+ * Greater?
+ * @param lhs
+ */
+void SSRE_Vec4_Greater2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Greater3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Greater( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs, SSRE_Vec4_t* rhs );
 
 #endif

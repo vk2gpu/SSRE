@@ -29,6 +29,13 @@ THE SOFTWARE.
 #include <malloc.h>
 #include <math.h>
 
+typedef struct
+{
+	u32* pixels;
+	int w;
+	int h;
+} PixelBuffer_t;
+
 void simpleTestDraw( u32* pixels, int width, int height )
 {
 	int x, y;
@@ -83,7 +90,7 @@ void simpleTestDraw( u32* pixels, int width, int height )
 			// Scale up.
 			SSRE_Vec4_Div( &pixel, &pixel, &halfRes );
 		
-			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, tri, &pixel );
+			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
 			
 			if( pixelBarycentric.x >= 0 && 
 				pixelBarycentric.y >= 0 && 
@@ -95,21 +102,23 @@ void simpleTestDraw( u32* pixels, int width, int height )
 				u32 outColour = SSRE_Math_LerpColourR8G8B8A8( 3, colours, &pixelBarycentric.x );
 				*pixels++ = outColour;
 			}
-			else
-			{
-				*pixels++ = 0x0;
-			}
 		}
 	}	
 }
 
-void testSimpleScanlineDraw( u32* pixels, int width, int height )
+void simpleTestDrawRegioned( u32* pixels, int width, int height )
 {
 	int x, y;
-	SSRE_Vec4_t pixel;
-	SSRE_Vec4_t pixelBarycentric;
-	SSRE_Vec4_t halfRes;
+	u32* outPixels;
+	SSRE_Vec4_t pixel = { 0, 0, 0, 0 };
+	SSRE_Vec4_t pixelBarycentric = { 0, 0, 0, 0 };
+	SSRE_Vec4_t halfRes = { 0, 0, 0, 0 };
+	SSRE_Vec4_t invHalfRes = { 0, 0, 0, 0 };
 	SSRE_Vec4_t tri[3];
+	SSRE_Vec4_t minCoord = { 0, 0, 0, 0 };
+	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
+	SSRE_Vec4_t minPixel = { 0, 0, 0, 0 };
+	SSRE_Vec4_t maxPixel = { 0, 0, 0, 0 };
 	u32 colours[3] = 
 	{
 		0xff0000ff,
@@ -122,6 +131,9 @@ void testSimpleScanlineDraw( u32* pixels, int width, int height )
 	halfRes.y = ( height << SSRE_FIXED_PRECISION ) >> 1;
 	halfRes.z = 1;
 	halfRes.w = 1;
+
+	// Setup inv res.
+	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
 
 	// Setup simple triangle.
 	tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
@@ -139,69 +151,142 @@ void testSimpleScanlineDraw( u32* pixels, int width, int height )
 	tri[2].z = 0;
 	tri[2].w = 0;
 
+	// Find min/max width and height so we don't try to render to the full screen.
+	SSRE_Vec4_Less2( &minCoord, &tri[0], &tri[1] );
+	SSRE_Vec4_Less2( &minCoord, &minCoord, &tri[2] );
+	SSRE_Vec4_Greater2( &maxCoord, &tri[0], &tri[1] );
+	SSRE_Vec4_Greater2( &maxCoord, &maxCoord, &tri[2] );
+
+	// Scale down.
+	SSRE_Vec4_Mul2( &minPixel, &minCoord, &halfRes );
+	SSRE_Vec4_Mul2( &maxPixel, &maxCoord, &halfRes );
+
+	// Offset.
+	SSRE_Vec4_Add2( &minPixel, &minPixel, &halfRes );
+	SSRE_Vec4_Add2( &maxPixel, &maxPixel, &halfRes );
+
+	minPixel.x >>= SSRE_FIXED_PRECISION;
+	minPixel.y >>= SSRE_FIXED_PRECISION;
+	maxPixel.x >>= SSRE_FIXED_PRECISION;
+	maxPixel.y >>= SSRE_FIXED_PRECISION;
+
+
 	// Determine if any primitives lie on this scanline.
-	for( y = 0; y < height; ++y )
+	for( y = minPixel.y, pixel.y = minCoord.y; 
+		 y <= maxPixel.y;
+		 ++y, pixel.y += invHalfRes.y )
 	{
-		// Convert screen space to clip space to keep from going beyond our 16 bit range.
-		pixel.x = 0;
-		pixel.y = y << SSRE_FIXED_PRECISION;
-		pixel.z = 1;
-		pixel.w = 1;
+		outPixels = &pixels[ minPixel.x + y * width ];
 
-		// Offset.
-		SSRE_Vec4_Sub( &pixel, &pixel, &halfRes );
-
-		// Scale up.
-		SSRE_Vec4_Div( &pixel, &pixel, &halfRes );
-		
-		// Do an intersection test.
-		
-		// Convert
-		//SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, tri, &pixel );
-
-
-		for( x = 0; x < width; ++x )
+		for( x = minPixel.x, pixel.x = minCoord.x; 
+			 x <= maxPixel.x; 
+			 ++x, pixel.x += invHalfRes.x, ++outPixels )
 		{
+			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
+			
+			if( pixelBarycentric.x >= 0 && 
+				pixelBarycentric.y >= 0 && 
+				pixelBarycentric.z >= 0 &&
+				pixelBarycentric.x <= SSRE_FIXED_ONE && 
+				pixelBarycentric.y <= SSRE_FIXED_ONE && 
+				pixelBarycentric.z <= SSRE_FIXED_ONE ) 
+			{
+				*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, colours, &pixelBarycentric.x );
+			}
+		}
+	}
+}
 
+void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32 colour )
+{
+	int x, y;
+	u32* outPixels;
+	SSRE_Vec4_t pixel = { 0, 0, 0, 0 };
+	SSRE_Vec4_t pixelBarycentric = { 0, 0, 0, 0 };
+	SSRE_Vec4_t halfRes = { 0, 0, 0, 0 };
+	SSRE_Vec4_t invHalfRes = { 0, 0, 0, 0 };
+	SSRE_Vec4_t minCoord = { 0, 0, 0, 0 };
+	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
+	SSRE_Vec4_t minPixel = { 0, 0, 0, 0 };
+	SSRE_Vec4_t maxPixel = { 0, 0, 0, 0 };
+
+	// Setup half res.
+	halfRes.x = ( buffer->w << SSRE_FIXED_PRECISION ) >> 1;
+	halfRes.y = ( buffer->h << SSRE_FIXED_PRECISION ) >> 1;
+	halfRes.z = 1;
+	halfRes.w = 1;
+
+	// Setup inv res.
+	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
+
+	// Find min/max width and height so we don't try to render to the full screen.
+	SSRE_Vec4_Less2( &minCoord, &points[0], &points[1] );
+	SSRE_Vec4_Less2( &minCoord, &minCoord, &points[2] );
+	SSRE_Vec4_Greater2( &maxCoord, &points[0], &points[1] );
+	SSRE_Vec4_Greater2( &maxCoord, &maxCoord, &points[2] );
+
+	// Scale down.
+	SSRE_Vec4_Mul2( &minPixel, &minCoord, &halfRes );
+	SSRE_Vec4_Mul2( &maxPixel, &maxCoord, &halfRes );
+
+	// Offset.
+	SSRE_Vec4_Add2( &minPixel, &minPixel, &halfRes );
+	SSRE_Vec4_Add2( &maxPixel, &maxPixel, &halfRes );
+
+	// Back to integers.
+	minPixel.x >>= SSRE_FIXED_PRECISION;
+	minPixel.y >>= SSRE_FIXED_PRECISION;
+	maxPixel.x >>= SSRE_FIXED_PRECISION;
+	maxPixel.y >>= SSRE_FIXED_PRECISION;
+
+
+	// Determine if any primitives lie on this scanline.
+	for( y = minPixel.y, pixel.y = minCoord.y; 
+		 y <= maxPixel.y;
+		 ++y, pixel.y += invHalfRes.y )
+	{
+		outPixels = &buffer->pixels[ minPixel.x + y * buffer->w ];
+
+		for( x = minPixel.x, pixel.x = minCoord.x; 
+			 x <= maxPixel.x; 
+			 ++x, pixel.x += invHalfRes.x, ++outPixels )
+		{
+			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
+			
+			if( pixelBarycentric.x >= 0 && 
+				pixelBarycentric.y >= 0 && 
+				pixelBarycentric.z >= 0 &&
+				pixelBarycentric.x <= SSRE_FIXED_ONE && 
+				pixelBarycentric.y <= SSRE_FIXED_ONE && 
+				pixelBarycentric.z <= SSRE_FIXED_ONE ) 
+			{
+				*outPixels = colour;
+			}
 		}
 	}
 }
 
 int main( int argc, char* argv[] )
 {
-	int width = 640;
-	int height = 480;
 	u32 timerStart;
 	u32 timerEnd;
 	u32 frameCount = 0;
-
+	SSRE_Vec4_t tri[3];
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* texture = NULL;
-	u32* pixels = (u32*)malloc( width * height * sizeof( u32 ) );
+	PixelBuffer_t buffer = 
+	{
+		NULL,
+		640,
+		480
+	};
 	u32 shouldQuit = 0;
-	SSRE_Fixed_t fixedA = SSRE_Fixed_FromFloat( 100.0f );
-	SSRE_Fixed_t fixedB = SSRE_Fixed_Sqrt( fixedA );
-	float val = 0.0f;
-	SSRE_Vec4_t vecA = 
-	{
-		SSRE_Fixed_FromFloat( 1.0f ),
-		SSRE_Fixed_FromFloat( 1.0f ),
-		SSRE_Fixed_FromFloat( 0.0f ),
-		SSRE_Fixed_FromFloat( 0.0f ),
-	};
+	buffer.pixels = (u32*)malloc( buffer.w * buffer.h * sizeof( u32 ) );
 
-	SSRE_Vec4_t vecB = 
-	{
-		SSRE_Fixed_FromFloat( 0.0f ),
-		SSRE_Fixed_FromFloat( 1.0f ),
-		SSRE_Fixed_FromFloat( 0.0f ),
-		SSRE_Fixed_FromFloat( 0.0f ),
-	};
-
-	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0 );
+	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w, buffer.h, 0 );
 	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
-	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height );
+	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, buffer.w, buffer.h );
 
 	timerStart = SDL_GetTicks();
 	do
@@ -220,9 +305,29 @@ int main( int argc, char* argv[] )
 			}
 		}
 
-		simpleTestDraw( pixels, width, height );
+		memset( buffer.pixels, 0x0, sizeof( u32 ) * buffer.w * buffer.h );
 
-		SDL_UpdateTexture(texture, NULL, pixels, width * sizeof ( u32 ));
+		//simpleTestDrawRegioned( pixels, width, height );
+
+		// Setup simple triangle.
+
+		tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
+		tri[0].y = SSRE_Fixed_FromFloat( -0.5f );
+		tri[0].z = 0;
+		tri[0].w = 0;
+
+		tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
+		tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
+		tri[1].z = 0;
+		tri[1].w = 0;
+
+		tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
+		tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
+		tri[2].z = 0;
+		tri[2].w = 0;
+		drawTriangle( &buffer, tri, 0xff0000ff );
+
+		SDL_UpdateTexture(texture, NULL, buffer.pixels, buffer.w * sizeof ( u32 ));
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
@@ -241,7 +346,7 @@ int main( int argc, char* argv[] )
 	}
 	while( !shouldQuit );
 
-	free( pixels );
+	free( buffer.pixels );
 
 	return 0;
 }

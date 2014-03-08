@@ -25,8 +25,42 @@ THE SOFTWARE.
 
 #include <assert.h>
 
-void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord )
+void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out,
+									   	const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord )
 {
+#if 1
+	SSRE_Vec4_t tri_tempA;
+	SSRE_Vec4_t tri_tempB;
+	SSRE_Vec4_t tri_tempC;
+	SSRE_Vec4_t cross_ABC;
+	SSRE_Vec4_t cross_segment;
+	SSRE_Fixed_t invLengthSquared;
+
+	SSRE_Vec4_Sub3( &tri_tempC, pointC, pointA );
+	SSRE_Vec4_Sub3( &tri_tempA, pointB, pointA );
+	SSRE_Vec4_Cross3( &cross_ABC, &tri_tempA, &tri_tempC );
+	invLengthSquared = SSRE_Fixed_Rcp( SSRE_Vec4_MagSqr3( &cross_ABC ) );
+
+	SSRE_Vec4_Sub3( &tri_tempB, coord, pointA );
+	SSRE_Vec4_Cross3( &cross_segment, &tri_tempA, &tri_tempB );
+
+	out->z = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_segment ), invLengthSquared );
+
+	SSRE_Vec4_Sub3( &tri_tempA, pointC, pointB );
+	SSRE_Vec4_Sub3( &tri_tempB, coord, pointB );
+	SSRE_Vec4_Cross3( &cross_segment, &tri_tempA, &tri_tempB );
+
+	out->x = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_segment ), invLengthSquared );
+
+	SSRE_Vec4_Sub3( &tri_tempA, pointA, pointC );
+	SSRE_Vec4_Sub3( &tri_tempB, coord, pointC );
+	SSRE_Vec4_Cross3( &cross_segment, &tri_tempA, &tri_tempB );
+
+	out->y = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_segment ), invLengthSquared );
+#else
 	SSRE_Vec4_t tri_BA;
 	SSRE_Vec4_t tri_CA;
 	SSRE_Vec4_t tri_CB;
@@ -40,13 +74,13 @@ void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri
 	SSRE_Vec4_t cross_ABP;
 	SSRE_Fixed_t invLengthSquared;
 
-	SSRE_Vec4_Sub3( &tri_BA, &tri[1], &tri[0] );
-	SSRE_Vec4_Sub3( &tri_CA, &tri[2], &tri[0] );
-	SSRE_Vec4_Sub3( &tri_CB, &tri[2], &tri[1] );
-	SSRE_Vec4_Sub3( &tri_AC, &tri[0], &tri[2] );
-	SSRE_Vec4_Sub3( &tri_PA, coord, &tri[0] );
-	SSRE_Vec4_Sub3( &tri_PB, coord, &tri[1] );
-	SSRE_Vec4_Sub3( &tri_PC, coord, &tri[2] );
+	SSRE_Vec4_Sub3( &tri_BA, pointB, pointA );
+	SSRE_Vec4_Sub3( &tri_CA, pointC, pointA );
+	SSRE_Vec4_Sub3( &tri_CB, pointC, pointB );
+	SSRE_Vec4_Sub3( &tri_AC, pointA, pointB );
+	SSRE_Vec4_Sub3( &tri_PA, coord, pointA );
+	SSRE_Vec4_Sub3( &tri_PB, coord, pointB );
+	SSRE_Vec4_Sub3( &tri_PC, coord, pointC );
 
 	SSRE_Vec4_Cross3( &cross_ABC, &tri_BA, &tri_CA );
 	SSRE_Vec4_Cross3( &cross_BCP, &tri_CB, &tri_PB );
@@ -58,21 +92,114 @@ void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri
 	out->x = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_BCP ), invLengthSquared );
 	out->y = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_CAP ), invLengthSquared );
 	out->z = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_ABP ), invLengthSquared );
-	out->w = 0;
+#endif
 }
 
-void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord )
+void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out,
+									   	const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord )
 {
 	SSRE_Vec4_t uOut;
 	SSRE_Vec4_t vOut;
 	SSRE_Vec4_t wOut;
 
-	SSRE_Vec4_MulScalar3( &uOut, &tri[0], coord->x );
-	SSRE_Vec4_MulScalar3( &vOut, &tri[1], coord->y );
-	SSRE_Vec4_MulScalar3( &wOut, &tri[2], coord->z );
+	SSRE_Vec4_MulScalar3( &uOut, pointA, coord->x );
+	SSRE_Vec4_MulScalar3( &vOut, pointB, coord->y );
+	SSRE_Vec4_MulScalar3( &wOut, pointC, coord->z );
 	
 	SSRE_Vec4_Add3( out, &uOut, &vOut );
 	SSRE_Vec4_Add3( out, out, &wOut );
+}
+
+int SSRE_Math_LineLineIntersection2( SSRE_Vec4_t* out,
+									 const SSRE_Vec4_t* lineA0, 
+									 const SSRE_Vec4_t* lineA1, 
+									 const SSRE_Vec4_t* lineB0,
+									 const SSRE_Vec4_t* lineB1 )
+
+{
+	SSRE_Fixed_t mA, mB, cA, cB, s, t;
+	
+	mA = SSRE_Fixed_Div( lineA1->y - lineA0->y, lineA1->x - lineA0->x );
+	mB = SSRE_Fixed_Div( lineB1->y - lineB0->y, lineB1->x - lineB0->x );
+
+	if( mA == mB )
+	{
+		return SSRE_MATH_INTERSECTION_NONE;
+	}
+
+	cA = lineA0->y - SSRE_Fixed_Mul( mA, lineA0->x );
+	cB = lineB0->y - SSRE_Fixed_Mul( mB, lineB0->x );
+
+	// Calculate intersection point.
+	out->x = SSRE_Fixed_Div( cB - cA, mA - mB );
+	out->y = SSRE_Fixed_Mul( mA, out->x ) + cA;
+
+	// Determine if intersection point is on the lines.
+	s = SSRE_Fixed_Div( out->x - lineA0->x , lineA1->x - lineA0->x );
+	t = SSRE_Fixed_Div( out->x - lineB0->x , lineB1->x - lineB0->x );
+
+	if( s >= 0 && s <= SSRE_FIXED_ONE &&
+		t >= 0 && t <= SSRE_FIXED_ONE )
+	{
+		return SSRE_MATH_INTERSECTION_SEGMENT;
+	}
+
+	return SSRE_MATH_INTERSECTION_LINE;
+}
+
+int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
+										 const SSRE_Vec4_t* line0, 
+										 const SSRE_Vec4_t* line1, 
+										 const SSRE_Vec4_t* point0, 
+										 const SSRE_Vec4_t* point1, 
+										 const SSRE_Vec4_t* point2, 
+										 int wantedIntersection )
+
+{
+	SSRE_Vec4_t tempOut;
+	SSRE_Fixed_t tempDist;
+	SSRE_Fixed_t nearestDist = 0x7fffffff;
+
+	assert( wantedIntersection != SSRE_MATH_INTERSECTION_NONE );
+	
+	if( SSRE_Math_LineLineIntersection2( &tempOut, line0, line1, point0, point1 ) == wantedIntersection )
+	{
+		SSRE_Vec4_Sub2( &tempOut, &tempOut, line0 );
+		tempDist = SSRE_Vec4_MagSqr2( &tempOut );
+		if( tempDist < nearestDist )
+		{
+			nearestDist = tempDist;
+			*out = tempOut;
+		}
+	}
+
+	if( SSRE_Math_LineLineIntersection2( &tempOut, line0, line1, point1, point2 ) == wantedIntersection )
+	{
+		SSRE_Vec4_Sub2( &tempOut, &tempOut, line0 );
+		tempDist = SSRE_Vec4_MagSqr2( &tempOut );
+		if( tempDist < nearestDist )
+		{
+			nearestDist = tempDist;
+			*out = tempOut;
+		}
+	}
+
+	if( SSRE_Math_LineLineIntersection2( &tempOut, line0, line1, point2, point0 ) == wantedIntersection )
+	{
+		SSRE_Vec4_Sub2( &tempOut, &tempOut, line0 );
+		tempDist = SSRE_Vec4_MagSqr2( &tempOut );
+		if( tempDist < nearestDist )
+		{
+			nearestDist = tempDist;
+			*out = tempOut;
+		}
+	}
+
+	// Determine if we found an intersection.
+	return nearestDist == 0x7fffffff ? SSRE_MATH_INTERSECTION_NONE : wantedIntersection;
 }
 
 u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_t* amounts )

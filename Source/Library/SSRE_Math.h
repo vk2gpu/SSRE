@@ -28,22 +28,74 @@ THE SOFTWARE.
 #include "SSRE_Fixed.h"
 #include "SSRE_Vec4.h"
 
+#define SSRE_MATH_INTERSECTION_NONE				( -1 )
+#define SSRE_MATH_INTERSECTION_LINE				( 0 )
+#define SSRE_MATH_INTERSECTION_SEGMENT			( 1 )
+
 
 /**
  * Cartesian to Barycentric (3D)
  * @param out Output barycentric coordinates.
- * @param tri Pointer to 3 coordinates for triangle.
+ * @param pointA Point a
+ * @param pointB Point b
+ * @param pointC Point c
  * @param coord Cartesian coordinate.
  */
-void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord );
+void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, 
+									    const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord );
 
 /**
  * Barycentric to Cartesian (3D)
  * @param out Output cartesian coordinates.
- * @param tri Pointer to 3 coordinates for triangle.
+ * @param pointA Point a
+ * @param pointB Point b
+ * @param pointC Point c
  * @param coord Barycentric coordinate.
  */
-void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out, const SSRE_Vec4_t* tri, const SSRE_Vec4_t* coord );
+void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out,
+									    const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord );
+
+/**
+ * Find line-line intersection.
+ * @param out Output coordinate.
+ * @param lineA0
+ * @param lineA1
+ * @param lineB0
+ * @param lineB1
+ * @return SSRE_MATH_INTERSECTION_NONE if no intersection, 
+ *         SSRE_MATH_INTERSECTION_RAY if intersection anywhere, 
+ *         SSRE_MATH_INTERSECTION_SEGMENT if intersection is in line segments.
+ */
+int SSRE_Math_LineLineIntersection2( SSRE_Vec4_t* out, 
+									const SSRE_Vec4_t* lineA0, 
+									const SSRE_Vec4_t* lineA1, 
+									const SSRE_Vec4_t* lineB0,
+									const SSRE_Vec4_t* lineB1 );
+
+/**
+ * Find line-triangle intersection.
+ * @param out Output coordinate.
+ * @param lineA0
+ * @param lineA0
+ * @param point0
+ * @param point1
+ * @param point2
+ * @param wantedIntersection SSRE_MATH_INTERSECTION_RAY or SSRE_MATH_INTERSECTION_SEGMENT.
+ * @return SSRE_MATH_INTERSECTION_NONE if no intersection.
+ */
+int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out, 
+										 const SSRE_Vec4_t* line0, 
+										 const SSRE_Vec4_t* line1, 
+										 const SSRE_Vec4_t* point0, 
+										 const SSRE_Vec4_t* point1, 
+										 const SSRE_Vec4_t* point2, 
+										 int wantedIntersection );
 
 /**
  * Mix R8G8B8A8 colours.
