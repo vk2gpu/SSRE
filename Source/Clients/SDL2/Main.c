@@ -29,20 +29,18 @@ THE SOFTWARE.
 #include <malloc.h>
 #include <math.h>
 
-void testDraw( u32* pixels, int width, int height )
+void simpleTestDraw( u32* pixels, int width, int height )
 {
-	static float ticker = 0.0f;
 	int x, y;
 	SSRE_Vec4_t pixel;
 	SSRE_Vec4_t pixelBarycentric;
 	SSRE_Vec4_t halfRes;
 	SSRE_Vec4_t tri[3];
-
 	u32 colours[3] = 
 	{
-		0xffff0000,
-		0xff00ff00,
 		0xff0000ff,
+		0x00ff00ff,
+		0x0000ffff,
 	};
 
 	// Setup half res.
@@ -51,21 +49,20 @@ void testDraw( u32* pixels, int width, int height )
 	halfRes.z = 1;
 	halfRes.w = 1;
 
-	ticker += 0.05f;
 	
 	// Setup simple triangle.
-	tri[0].x = SSRE_Fixed_FromFloat( sinf( ticker ) * 0.5f );
-	tri[0].y = SSRE_Fixed_FromFloat( cosf( ticker ) * 0.5f );
+	tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
+	tri[0].y = SSRE_Fixed_FromFloat( -1.0f );
 	tri[0].z = 0;
 	tri[0].w = 0;
 
 	tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
-	tri[1].y = SSRE_Fixed_FromFloat( 0.0f );
+	tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
 	tri[1].z = 0;
 	tri[1].w = 0;
 
 	tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
-	tri[2].y = SSRE_Fixed_FromFloat( 0.0f );
+	tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
 	tri[2].z = 0;
 	tri[2].w = 0;
 
@@ -86,9 +83,8 @@ void testDraw( u32* pixels, int width, int height )
 			// Scale up.
 			SSRE_Vec4_Div( &pixel, &pixel, &halfRes );
 		
-
 			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, tri, &pixel );
-
+			
 			if( pixelBarycentric.x >= 0 && 
 				pixelBarycentric.y >= 0 && 
 				pixelBarycentric.z >= 0 &&
@@ -107,11 +103,77 @@ void testDraw( u32* pixels, int width, int height )
 	}	
 }
 
+void testSimpleScanlineDraw( u32* pixels, int width, int height )
+{
+	int x, y;
+	SSRE_Vec4_t pixel;
+	SSRE_Vec4_t pixelBarycentric;
+	SSRE_Vec4_t halfRes;
+	SSRE_Vec4_t tri[3];
+	u32 colours[3] = 
+	{
+		0xff0000ff,
+		0x00ff00ff,
+		0x0000ffff,
+	};
+
+	// Setup half res.
+	halfRes.x = ( width << SSRE_FIXED_PRECISION ) >> 1;
+	halfRes.y = ( height << SSRE_FIXED_PRECISION ) >> 1;
+	halfRes.z = 1;
+	halfRes.w = 1;
+
+	// Setup simple triangle.
+	tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
+	tri[0].y = SSRE_Fixed_FromFloat( -0.5f );
+	tri[0].z = 0;
+	tri[0].w = 0;
+
+	tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
+	tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
+	tri[1].z = 0;
+	tri[1].w = 0;
+
+	tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
+	tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
+	tri[2].z = 0;
+	tri[2].w = 0;
+
+	// Determine if any primitives lie on this scanline.
+	for( y = 0; y < height; ++y )
+	{
+		// Convert screen space to clip space to keep from going beyond our 16 bit range.
+		pixel.x = 0;
+		pixel.y = y << SSRE_FIXED_PRECISION;
+		pixel.z = 1;
+		pixel.w = 1;
+
+		// Offset.
+		SSRE_Vec4_Sub( &pixel, &pixel, &halfRes );
+
+		// Scale up.
+		SSRE_Vec4_Div( &pixel, &pixel, &halfRes );
+		
+		// Do an intersection test.
+		
+		// Convert
+		//SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, tri, &pixel );
+
+
+		for( x = 0; x < width; ++x )
+		{
+
+		}
+	}
+}
 
 int main( int argc, char* argv[] )
 {
 	int width = 640;
 	int height = 480;
+	u32 timerStart;
+	u32 timerEnd;
+	u32 frameCount = 0;
 
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
@@ -137,15 +199,11 @@ int main( int argc, char* argv[] )
 		SSRE_Fixed_FromFloat( 0.0f ),
 	};
 
-	//SSRE_Vec4_t vecC;
-
-	//SSRE_Vec4_Reflect( &vecC, &vecA, &vecB );
-	//val = SSRE_Fixed_ToFloat( vecA.x );
-
 	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height, 0 );
 	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
-	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, width, height );
+	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, width, height );
 
+	timerStart = SDL_GetTicks();
 	do
 	{
 		SDL_Event event;
@@ -162,12 +220,24 @@ int main( int argc, char* argv[] )
 			}
 		}
 
-		testDraw( pixels, width, height );
+		simpleTestDraw( pixels, width, height );
 
 		SDL_UpdateTexture(texture, NULL, pixels, width * sizeof ( u32 ));
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
+
+		++frameCount;
+
+		if( frameCount == 10 )
+		{
+			timerEnd = SDL_GetTicks();
+
+			SDL_Log( "10 frames rendered in %u ms (%f ms per frame )\n", timerEnd - timerStart, (float)(timerEnd - timerStart) / 10.0f );
+
+			timerStart = timerEnd;
+			frameCount = 0;
+		}
 	}
 	while( !shouldQuit );
 

@@ -25,6 +25,19 @@ THE SOFTWARE.
 
 #include <assert.h>
 
+void SSRE_Vec4_Add2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x + rhs->x;
+	out->y = lhs->y + rhs->y;
+}
+
+void SSRE_Vec4_Add3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x + rhs->x;
+	out->y = lhs->y + rhs->y;
+	out->z = lhs->z + rhs->z;
+}
+
 void SSRE_Vec4_Add( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	out->x = lhs->x + rhs->x;
@@ -33,12 +46,38 @@ void SSRE_Vec4_Add( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
 	out->w = lhs->w + rhs->w;
 }
 
+void SSRE_Vec4_Sub2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x - rhs->x;
+	out->y = lhs->y - rhs->y;
+}
+
+void SSRE_Vec4_Sub3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = lhs->x - rhs->x;
+	out->y = lhs->y - rhs->y;
+	out->z = lhs->z - rhs->z;
+}
+
 void SSRE_Vec4_Sub( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	out->x = lhs->x - rhs->x;
 	out->y = lhs->y - rhs->y;
-	out->z = lhs->z -  rhs->z;
+	out->z = lhs->z - rhs->z;
 	out->w = lhs->w - rhs->w;
+}
+
+void SSRE_Vec4_Mul2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_Mul( lhs->x, rhs->x );
+	out->y = SSRE_Fixed_Mul( lhs->y, rhs->y );
+}
+
+void SSRE_Vec4_Mul3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_Mul( lhs->x, rhs->x );
+	out->y = SSRE_Fixed_Mul( lhs->y, rhs->y );
+	out->z = SSRE_Fixed_Mul( lhs->z, rhs->z );
 }
 
 void SSRE_Vec4_Mul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
@@ -49,12 +88,38 @@ void SSRE_Vec4_Mul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
 	out->w = SSRE_Fixed_Mul( lhs->w, rhs->w );
 }
 
+void SSRE_Vec4_Div2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_Div( lhs->x, rhs->x );
+	out->y = SSRE_Fixed_Div( lhs->y, rhs->y );
+}
+
+void SSRE_Vec4_Div3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	out->x = SSRE_Fixed_Div( lhs->x, rhs->x );
+	out->y = SSRE_Fixed_Div( lhs->y, rhs->y );
+	out->z = SSRE_Fixed_Div( lhs->z, rhs->z );
+}
+
 void SSRE_Vec4_Div( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	out->x = SSRE_Fixed_Div( lhs->x, rhs->x );
 	out->y = SSRE_Fixed_Div( lhs->y, rhs->y );
 	out->z = SSRE_Fixed_Div( lhs->z, rhs->z );
 	out->w = SSRE_Fixed_Div( lhs->w, rhs->w );
+}
+
+void SSRE_Vec4_MulScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
+{
+	out->x = SSRE_Fixed_Mul( lhs->x, rhs );
+	out->y = SSRE_Fixed_Mul( lhs->y, rhs );
+}
+
+void SSRE_Vec4_MulScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
+{
+	out->x = SSRE_Fixed_Mul( lhs->x, rhs );
+	out->y = SSRE_Fixed_Mul( lhs->y, rhs );
+	out->z = SSRE_Fixed_Mul( lhs->z, rhs );
 }
 
 void SSRE_Vec4_MulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
@@ -65,12 +130,38 @@ void SSRE_Vec4_MulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t
 	out->w = SSRE_Fixed_Mul( lhs->w, rhs );
 }
 
+void SSRE_Vec4_DivScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
+{
+	out->x = SSRE_Fixed_Div( lhs->x, rhs );
+	out->y = SSRE_Fixed_Div( lhs->y, rhs );
+}
+
+void SSRE_Vec4_DivScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
+{
+	out->x = SSRE_Fixed_Div( lhs->x, rhs );
+	out->y = SSRE_Fixed_Div( lhs->y, rhs );
+	out->z = SSRE_Fixed_Div( lhs->z, rhs );
+}
+
 void SSRE_Vec4_DivScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs )
 {
 	out->x = SSRE_Fixed_Div( lhs->x, rhs );
 	out->y = SSRE_Fixed_Div( lhs->y, rhs );
 	out->z = SSRE_Fixed_Div( lhs->z, rhs );
 	out->w = SSRE_Fixed_Div( lhs->w, rhs );
+}
+
+void SSRE_Vec4_Rcp2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs )
+{
+	out->x = SSRE_Fixed_Rcp( lhs->x );
+	out->y = SSRE_Fixed_Rcp( lhs->y );
+}
+
+void SSRE_Vec4_Rcp3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs )
+{
+	out->x = SSRE_Fixed_Rcp( lhs->x );
+	out->y = SSRE_Fixed_Rcp( lhs->y );
+	out->z = SSRE_Fixed_Rcp( lhs->z );
 }
 
 void SSRE_Vec4_Rcp( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs )
@@ -81,11 +172,17 @@ void SSRE_Vec4_Rcp( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs )
 	out->w = SSRE_Fixed_Rcp( lhs->w );
 }
 
+SSRE_Fixed_t SSRE_Vec4_Dot2( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
+{
+	SSRE_Vec4_t mul;
+	SSRE_Vec4_Mul2( &mul, lhs, rhs );
+	return mul.x + mul.y + mul.z;
+}
+
 SSRE_Fixed_t SSRE_Vec4_Dot3( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
-	// TODO: 3d mul.
 	SSRE_Vec4_t mul;
-	SSRE_Vec4_Mul( &mul, lhs, rhs );
+	SSRE_Vec4_Mul3( &mul, lhs, rhs );
 	return mul.x + mul.y + mul.z;
 }
 
@@ -96,6 +193,14 @@ SSRE_Fixed_t SSRE_Vec4_Dot( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 	return mul.x + mul.y + mul.z + mul.w;
 }
 
+void SSRE_Vec4_Cross2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs )
+{
+	assert( out != lhs );
+
+	out->x = -lhs->y;
+	out->y = lhs->x;
+}
+
 void SSRE_Vec4_Cross3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	assert( out != lhs );
@@ -104,7 +209,11 @@ void SSRE_Vec4_Cross3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4
 	out->x = SSRE_Fixed_Mul( lhs->y, rhs->z ) - SSRE_Fixed_Mul( lhs->z, rhs->y );
 	out->y = SSRE_Fixed_Mul( lhs->z, rhs->x ) - SSRE_Fixed_Mul( lhs->x, rhs->z );
 	out->z = SSRE_Fixed_Mul( lhs->x, rhs->y ) - SSRE_Fixed_Mul( lhs->y, rhs->x );
-	out->w = 0;
+}
+
+SSRE_Fixed_t SSRE_Vec4_MagSqr2( const SSRE_Vec4_t* lhs )
+{
+	return SSRE_Vec4_Dot2( lhs, lhs );
 }
 
 SSRE_Fixed_t SSRE_Vec4_MagSqr3( const SSRE_Vec4_t* lhs )
@@ -112,14 +221,19 @@ SSRE_Fixed_t SSRE_Vec4_MagSqr3( const SSRE_Vec4_t* lhs )
 	return SSRE_Vec4_Dot3( lhs, lhs );
 }
 
-SSRE_Fixed_t SSRE_Vec4_Mag3( const SSRE_Vec4_t* lhs )
-{
-	return SSRE_Fixed_Sqrt( SSRE_Vec4_MagSqr3( lhs ) );
-}
-
 SSRE_Fixed_t SSRE_Vec4_MagSqr( const SSRE_Vec4_t* lhs )
 {
 	return SSRE_Vec4_Dot( lhs, lhs );
+}
+
+SSRE_Fixed_t SSRE_Vec4_Mag2( const SSRE_Vec4_t* lhs )
+{
+	return SSRE_Fixed_Sqrt( SSRE_Vec4_MagSqr2( lhs ) );
+}
+
+SSRE_Fixed_t SSRE_Vec4_Mag3( const SSRE_Vec4_t* lhs )
+{
+	return SSRE_Fixed_Sqrt( SSRE_Vec4_MagSqr3( lhs ) );
 }
 
 SSRE_Fixed_t SSRE_Vec4_Mag( const SSRE_Vec4_t* lhs )
@@ -127,10 +241,16 @@ SSRE_Fixed_t SSRE_Vec4_Mag( const SSRE_Vec4_t* lhs )
 	return SSRE_Fixed_Sqrt( SSRE_Vec4_MagSqr( lhs ) );
 }
 
+void SSRE_Vec4_Nrm2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs )
+{
+	SSRE_Fixed_t invMag = SSRE_Fixed_Rcp( SSRE_Vec4_Mag2( lhs ) );
+	SSRE_Vec4_MulScalar2( out, lhs, invMag );
+}
+
 void SSRE_Vec4_Nrm3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs )
 {
 	SSRE_Fixed_t invMag = SSRE_Fixed_Rcp( SSRE_Vec4_Mag3( lhs ) );
-	SSRE_Vec4_MulScalar( out, lhs, invMag );
+	SSRE_Vec4_MulScalar3( out, lhs, invMag );
 }
 
 void SSRE_Vec4_Nrm( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs )

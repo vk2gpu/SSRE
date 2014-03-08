@@ -43,6 +43,8 @@ typedef struct
  * @param lhs
  * @param rhs
  */
+void SSRE_Vec4_Add2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Add3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 void SSRE_Vec4_Add( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
@@ -51,6 +53,8 @@ void SSRE_Vec4_Add( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
  * @param lhs
  * @param rhs
  */
+void SSRE_Vec4_Sub2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Sub3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 void SSRE_Vec4_Sub( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
@@ -59,6 +63,8 @@ void SSRE_Vec4_Sub( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
  * @param lhs
  * @param rhs
  */
+void SSRE_Vec4_Mul2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Mul3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 void SSRE_Vec4_Mul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
@@ -67,6 +73,8 @@ void SSRE_Vec4_Mul( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
  * @param lhs
  * @param rhs
  */
+void SSRE_Vec4_Div2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Vec4_Div3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 void SSRE_Vec4_Div( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
@@ -75,6 +83,8 @@ void SSRE_Vec4_Div( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t*
  * @param lhs
  * @param rhs
  */
+void SSRE_Vec4_MulScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
+void SSRE_Vec4_MulScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
 void SSRE_Vec4_MulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
 
 
@@ -84,6 +94,8 @@ void SSRE_Vec4_MulScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t
  * @param lhs
  * @param rhs
  */
+void SSRE_Vec4_DivScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
+void SSRE_Vec4_DivScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
 void SSRE_Vec4_DivScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t rhs );
 
 
@@ -92,64 +104,50 @@ void SSRE_Vec4_DivScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t
  * @param out Output vector.
  * @param lhs
  */
+void SSRE_Vec4_Rcp2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs );
+void SSRE_Vec4_Rcp3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs );
 void SSRE_Vec4_Rcp( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs );
-
-/**
- * Dot3.
- * @param lhs
- * @param rhs
- */
-SSRE_Fixed_t SSRE_Vec4_Dot3( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
  * Dot.
  * @param lhs
  * @param rhs
  */
+SSRE_Fixed_t SSRE_Vec4_Dot2( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
+SSRE_Fixed_t SSRE_Vec4_Dot3( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 SSRE_Fixed_t SSRE_Vec4_Dot( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
- * Cross3.
+ * Cross.
  * @param out Output vector.
  * @param lhs
  * @param rhs
  */
+void SSRE_Vec4_Cross2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs );
 void SSRE_Vec4_Cross3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
- * Magnitude squared3.
+ * Magnitude squared.
  * @param lhs
  */
+SSRE_Fixed_t SSRE_Vec4_MagSqr2( const SSRE_Vec4_t* lhs );
 SSRE_Fixed_t SSRE_Vec4_MagSqr3( const SSRE_Vec4_t* lhs );
+SSRE_Fixed_t SSRE_Vec4_MagSqr( const SSRE_Vec4_t* lhs );
 
 /**
  * Magnitude3.
  * @param lhs
  */
+SSRE_Fixed_t SSRE_Vec4_Mag2( const SSRE_Vec4_t* lhs );
 SSRE_Fixed_t SSRE_Vec4_Mag3( const SSRE_Vec4_t* lhs );
-
-/**
- * Magnitude squared4.
- * @param lhs
- */
-SSRE_Fixed_t SSRE_Vec4_MagSqr( const SSRE_Vec4_t* lhs );
-
-/**
- * Magnitude4.
- * @param lhs
- */
 SSRE_Fixed_t SSRE_Vec4_Mag( const SSRE_Vec4_t* lhs );
 
 /**
- * Normalise3.
+ * Normalise.
  * @param lhs
  */
+void SSRE_Vec4_Nrm2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs );
 void SSRE_Vec4_Nrm3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs );
-
-/**
- * Normalise4.
- * @param lhs
- */
 void SSRE_Vec4_Nrm( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs );
 
 #endif
