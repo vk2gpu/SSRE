@@ -21,21 +21,47 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef __SSRE_H__
-#define __SSRE_H__
+#ifndef __SSRE_MAT44_H__
+#define __SSRE_MAT44_H__
 
-#include "SSRE_Types.h"
-#include "SSRE_Fixed.h"
 #include "SSRE_Vec4.h"
-#include "SSRE_Mat44.h"
-#include "SSRE_Math.h"
 
 /**
- * Get library version.
- * @param outMajor Pointer for where to write major version.
- * @param outMajor Pointer for where to write minor version.
- * @param outMajor Pointer for where to write revision version.
+ * Fixed point type.
  */
-void SSRE_GetVersion( int* outMajor, int* outMinor, int* outRevision );
+typedef struct
+{
+	SSRE_Vec4_t rows[4];
+} SSRE_Mat44_t;
 
-#endif // __SSRE_H__
+
+/**
+ * Identity.
+ * @param out
+ */
+void SSRE_Mat44_Identity( SSRE_Mat44_t* out );
+
+/**
+ * Rotation matrix.
+ * @param out
+ */
+void SSRE_Mat44_Rotation( SSRE_Mat44_t* out, int yaw, int pitch, int roll );
+
+/**
+* Get column.
+* @param out
+* @param in
+* @param column
+*/
+void SSRE_Mat44_GetColumn( SSRE_Vec4_t* out, const SSRE_Mat44_t* in, int column );
+
+/**
+ * Multiple.
+ * @param out
+ */
+void SSRE_Mat44_Multiply( SSRE_Mat44_t* out, const SSRE_Mat44_t* lhs, const SSRE_Mat44_t* rhs );
+
+
+
+#endif
+
