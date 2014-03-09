@@ -21,24 +21,51 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef __SSRE_H__
-#define __SSRE_H__
+#ifndef __SSRE_VERTEX_H__
+#define __SSRE_VERTEX_H__
 
-#include "SSRE_Types.h"
-#include "SSRE_Fixed.h"
 #include "SSRE_Vec4.h"
-#include "SSRE_Mat44.h"
-#include "SSRE_MatrixStack.h"
-#include "SSRE_Math.h"
-#include "SSRE_Vertex.h"
-#include "SSRE_VertexProcessor.h"
+
+#define	SSRE_VERTEX_HAS_POSITION				0x00000001
+#define	SSRE_VERTEX_HAS_COLOUR					0x00000002
+#define	SSRE_VERTEX_HAS_UV						0x00000004
 
 /**
- * Get library version.
- * @param outMajor Pointer for where to write major version.
- * @param outMajor Pointer for where to write minor version.
- * @param outMajor Pointer for where to write revision version.
+ * SSRE_VertexP_t
  */
-void SSRE_GetVersion( int* outMajor, int* outMinor, int* outRevision );
+typedef struct
+{
+	SSRE_Vec4_t pos;
+} SSRE_VertexP_t;
 
-#endif // __SSRE_H__
+/**
+ * SSRE_VertexPC_t
+ */
+typedef struct
+{
+	SSRE_Vec4_t pos;
+	u32			col;
+} SSRE_VertexPC_t;
+
+/**
+ * SSRE_VertexPT_t
+ */
+typedef struct
+{
+	SSRE_Vec4_t pos;
+	u8			u;
+	u8			v;
+} SSRE_VertexPT_t;
+
+/**
+ * SSRE_VertexPCT_t
+ */
+typedef struct
+{
+	SSRE_Vec4_t pos;
+	u32			col;
+	u8			u;
+	u8			v;
+} SSRE_VertexPCT_t;
+
+#endif

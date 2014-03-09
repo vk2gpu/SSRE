@@ -173,41 +173,54 @@ int SSRE_Math_LineLineIntersection2( SSRE_Vec4_t* out,
 									 const SSRE_Vec4_t* lineB1 )
 
 {
-	// NOTE: Don't think this works...check it out?
-	SSRE_Fixed_t mA, mB, cA, cB, s, t;
-	SSRE_Fixed_t xA = lineA1->x - lineA0->x;
-	SSRE_Fixed_t xB = lineB1->x - lineB0->x;
+	const SSRE_Fixed_t epsilon = SSRE_FIXED_SMALLEST_VALUE;
+	const SSRE_Fixed_t Aa = lineA1->y - lineA0->y;
+	const SSRE_Fixed_t Ab = lineA0->x - lineA1->x;
+	const SSRE_Fixed_t Ac = SSRE_Fixed_Mul( Aa, lineA0->x ) + SSRE_Fixed_Mul( Ab, lineA0->y );
+	const SSRE_Fixed_t Ba = lineB1->y - lineB0->y;
+	const SSRE_Fixed_t Bb = lineB0->x - lineB1->x;
+	const SSRE_Fixed_t Bc = SSRE_Fixed_Mul( Ba, lineB0->x ) + SSRE_Fixed_Mul( Bb, lineB0->y );
+	const SSRE_Fixed_t det = SSRE_Fixed_Mul( Aa, Bb ) - SSRE_Fixed_Mul( Ba, Ab );
+	SSRE_Fixed_t s, t, sDenom, tDenom;
 
-	if( xA == 0 ||
-		xB == 0 )
+	if( det == 0 )
 	{
 		return SSRE_MATH_INTERSECTION_NONE;
 	}
 	
-	mA = SSRE_Fixed_Div( lineA1->y - lineA0->y, xA );
-	mB = SSRE_Fixed_Div( lineB1->y - lineB0->y, xB );
+	out->x = SSRE_Fixed_Mul( Bb, Ac ) - SSRE_Fixed_Mul( Ab, Bc );
+	out->y = SSRE_Fixed_Mul( Aa, Bc ) - SSRE_Fixed_Mul( Ba, Ac );
+	SSRE_Vec4_DivScalar2( out, out, det );
 
-	if( mA == mB )
+	// Check point in line A.
+	if( Ab != 0 )
 	{
-		return SSRE_MATH_INTERSECTION_NONE;
+		// y = mx + c; 
+		s = SSRE_Fixed_Div( out->x - lineA0->x, -Ab );
+	}
+	else
+	{
+		// x = my + c;
+		s = SSRE_Fixed_Div( out->y - lineA0->y, Aa );
 	}
 
-	cA = lineA0->y - SSRE_Fixed_Mul( mA, lineA0->x );
-	cB = lineB0->y - SSRE_Fixed_Mul( mB, lineB0->x );
+	// Check point in line B
+	if( Bb != 0 )
+	{
+		// y = mx + c; 
+		t = SSRE_Fixed_Div( out->x - lineB0->x, -Bb );
+	}
+	else
+	{
+		// x = my + c;
+		t = SSRE_Fixed_Div( out->y - lineB0->y, Ba );
+	}
 
-	// Calculate intersection point.
-	out->x = SSRE_Fixed_Div( cB - cA, mA - mB );
-	out->y = SSRE_Fixed_Mul( mA, out->x ) + cA;
-
-	// Determine if intersection point is on the lines.
-	s = SSRE_Fixed_Div( out->x - lineA0->x , lineA1->x - lineA0->x );
-	t = SSRE_Fixed_Div( out->x - lineB0->x , lineB1->x - lineB0->x );
-
-	if( s >= 0 && s <= SSRE_FIXED_ONE &&
-		t >= 0 && t <= SSRE_FIXED_ONE )
+	if( s >= -epsilon && s <= ( SSRE_FIXED_ONE + epsilon ) &&
+		t >= -epsilon && t <= ( SSRE_FIXED_ONE + epsilon ) )
 	{
 		return SSRE_MATH_INTERSECTION_SEGMENT;
-	}
+	}		
 
 	return SSRE_MATH_INTERSECTION_LINE;
 }
@@ -265,23 +278,23 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
 	return nearestDist == 0x7fffffff ? SSRE_MATH_INTERSECTION_NONE : wantedIntersection;
 }
 
-u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_t* amounts )
+u32 SSRE_Math_LerpColourR8G8B8A8( int num, const char* colours, u32 stride, const SSRE_Fixed_t* amounts )
 {
 	int i;
 	SSRE_Vec4_t col = { 0, 0, 0, 0 };
 	
 	for( i = 0; i < num; ++i )
 	{
-		SSRE_Vec4_t in = 
-		{
-			( colours[i] & 0x000000ff ) << SSRE_FIXED_PRECISION,
-			( colours[i] & 0x0000ff00 ) >> 8 << SSRE_FIXED_PRECISION,
-			( colours[i] & 0x00ff0000 ) >> 16 << SSRE_FIXED_PRECISION,
-			( colours[i] & 0xff000000 ) >> 24 << SSRE_FIXED_PRECISION
-		};
+		SSRE_Vec4_t in;
+		in.x = ( *((u32*)colours) & 0x000000ff ) << SSRE_FIXED_PRECISION;
+		in.y = ( *((u32*)colours) & 0x0000ff00 ) >> 8 << SSRE_FIXED_PRECISION;
+		in.z = ( *((u32*)colours) & 0x00ff0000 ) >> 16 << SSRE_FIXED_PRECISION;
+		in.w = ( *((u32*)colours) & 0xff000000 ) >> 24 << SSRE_FIXED_PRECISION;
 
 		SSRE_Vec4_MulScalar( &in, &in, amounts[i] );
 		SSRE_Vec4_Add( &col, &col, &in );
+
+		colours += stride;
 	}
 
 	// Floor to int.

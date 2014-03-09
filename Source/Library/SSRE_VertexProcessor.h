@@ -24,8 +24,8 @@ THE SOFTWARE.
 #ifndef __SSRE_VERTEXPROCESSOR_H__
 #define __SSRE_VERTEXPROCESSOR_H__
 
-#include "SSRE_Vec4.h"
 #include "SSRE_Mat44.h"
+#include "SSRE_Vertex.h"
 
 /**
  * Vertex processor
@@ -34,16 +34,19 @@ typedef struct
 {
 	u32 noofVertices;
 	u32 currVertex;
-	SSRE_Vec4_t* vertices;
-
+	u32 vertexType;
+	u32 vertexStride;
+	void* vertices;
 
 } SSRE_VertexProcessor_t;
 
 /**
  * Create vertex processor.
  * @param noofVertices Number of vertices tobe able to cope.
+ * @param vertexType Vertex type flags.
+ * @param vertexStride Vertex stride.
  */
-SSRE_VertexProcessor_t* SSRE_VertexProcessor_Create( u32 noofVertices );
+SSRE_VertexProcessor_t* SSRE_VertexProcessor_Create( u32 noofVertices, u32 vertexType, u32 vertexStride );
 
 /**
  * Destroy vertex processor.
@@ -59,10 +62,24 @@ void SSRE_VertexProcessor_Destroy( SSRE_VertexProcessor_t* vertexProcessor );
  * @param matrix Matrix to process with.
  * @return First vertex processed.
  */
-const SSRE_Vec4_t* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcessor, 
-												 u32 noofVertices, 
-												 const SSRE_Vec4_t* vertices,
-												 SSRE_Mat44_t* matrix );
+const void* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcessor, 
+										  u32 noofVertices, 
+										  const void* vertices,
+										  SSRE_Mat44_t* matrix );
+
+/**
+ * Clip triangles.
+ * Clip them to be inside of -1/1 space on all axis.
+ * Will append newly created triangles to the end of the buffer.
+ */
+
+
+
+/**
+ * Sort triangles.
+ * @param vertexProcessor The vertex processor.
+ */
+void SSRE_VertexProcessor_SortTriangles( SSRE_VertexProcessor_t* vertexProcessor );
 
 /**
  * Reset vertex processor.
@@ -70,9 +87,4 @@ const SSRE_Vec4_t* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexP
  */
 void SSRE_VertexProcessor_Reset( SSRE_VertexProcessor_t* vertexProcessor );
 
-/**
- * 
- */
-
 #endif
-

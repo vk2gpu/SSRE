@@ -34,7 +34,7 @@ typedef s32 SSRE_Fixed_t;
 /**
  * Fixed point precision level.
  */
-#define SSRE_FIXED_PRECISION			( 12 )
+#define SSRE_FIXED_PRECISION			( 16 )
 #define SSRE_FIXED_DOUBLE_PRECISION		( SSRE_FIXED_PRECISION << 1 )
 #define SSRE_FIXED_HALF_PRECISION		( SSRE_FIXED_PRECISION >> 1 )
 #define SSRE_FIXED_FLOAT_STEP			( 1.0f / (float)( 1 << SSRE_FIXED_PRECISION ) )
@@ -56,6 +56,7 @@ typedef s32 SSRE_Fixed_t;
  * Common values.
  */
 #define SSRE_FIXED_ZERO					( (SSRE_Fixed_t)( 0 ) )
+#define SSRE_FIXED_SMALLEST_VALUE		( (SSRE_Fixed_t)( 0x00000001 ) )
 #define SSRE_FIXED_ONE					( (SSRE_Fixed_t)( 1 << SSRE_FIXED_PRECISION ) )
 #define SSRE_FIXED_TWO					( (SSRE_Fixed_t)( 2 << SSRE_FIXED_PRECISION ) )
 #define SSRE_FIXED_HALF					( (SSRE_Fixed_t)( 2 << ( SSRE_FIXED_PRECISION - 1 ) ) )
