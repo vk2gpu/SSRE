@@ -25,7 +25,43 @@ THE SOFTWARE.
 
 #include <assert.h>
 
-void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out,
+void SSRE_Math_CartesianToBarycentric23( SSRE_Vec4_t* out,
+									   	const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord )
+{
+	SSRE_Vec4_t tri_tempA;
+	SSRE_Vec4_t tri_tempB;
+	SSRE_Vec4_t tri_tempC;
+	SSRE_Vec4_t cross_ABC;
+	SSRE_Vec4_t cross_segment;
+	SSRE_Fixed_t invLengthSquared;
+
+	SSRE_Vec4_Sub3( &tri_tempC, pointC, pointA );
+	SSRE_Vec4_Sub3( &tri_tempA, pointB, pointA );
+	SSRE_Vec4_Cross2( &cross_ABC, &tri_tempA, &tri_tempC );
+	invLengthSquared = SSRE_Fixed_Rcp( SSRE_Vec4_MagSqr3( &cross_ABC ) );
+
+	SSRE_Vec4_Sub3( &tri_tempB, coord, pointA );
+	SSRE_Vec4_Cross2( &cross_segment, &tri_tempA, &tri_tempB );
+
+	out->z = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_segment ), invLengthSquared );
+
+	SSRE_Vec4_Sub3( &tri_tempA, pointC, pointB );
+	SSRE_Vec4_Sub3( &tri_tempB, coord, pointB );
+	SSRE_Vec4_Cross2( &cross_segment, &tri_tempA, &tri_tempB );
+
+	out->x = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_segment ), invLengthSquared );
+
+	SSRE_Vec4_Sub3( &tri_tempA, pointA, pointC );
+	SSRE_Vec4_Sub3( &tri_tempB, coord, pointC );
+	SSRE_Vec4_Cross2( &cross_segment, &tri_tempA, &tri_tempB );
+
+	out->y = SSRE_Fixed_Mul( SSRE_Vec4_Dot3( &cross_ABC, &cross_segment ), invLengthSquared );
+}
+
+void SSRE_Math_CartesianToBarycentric33( SSRE_Vec4_t* out,
 									   	const SSRE_Vec4_t* pointA,
 									    const SSRE_Vec4_t* pointB,
 									    const SSRE_Vec4_t* pointC,
@@ -95,7 +131,24 @@ void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out,
 #endif
 }
 
-void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out,
+void SSRE_Math_BarycentricToCartesian32( SSRE_Vec4_t* out,
+									   	const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord )
+{
+	SSRE_Vec4_t uOut;
+	SSRE_Vec4_t vOut;
+	SSRE_Vec4_t wOut;
+
+	SSRE_Vec4_MulScalar3( &uOut, pointA, coord->x );
+	SSRE_Vec4_MulScalar3( &vOut, pointB, coord->y );
+	
+	SSRE_Vec4_Add2( out, &uOut, &vOut );
+	SSRE_Vec4_Add2( out, out, &wOut );
+}
+
+void SSRE_Math_BarycentricToCartesian33( SSRE_Vec4_t* out,
 									   	const SSRE_Vec4_t* pointA,
 									    const SSRE_Vec4_t* pointB,
 									    const SSRE_Vec4_t* pointC,

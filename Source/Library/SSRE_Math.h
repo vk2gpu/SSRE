@@ -34,28 +34,38 @@ THE SOFTWARE.
 
 
 /**
- * Cartesian to Barycentric (3D)
+ * Cartesian to Barycentric.
  * @param out Output barycentric coordinates.
  * @param pointA Point a
  * @param pointB Point b
  * @param pointC Point c
  * @param coord Cartesian coordinate.
  */
-void SSRE_Math_CartesianToBarycentric3( SSRE_Vec4_t* out, 
+void SSRE_Math_CartesianToBarycentric23( SSRE_Vec4_t* out, 
+									    const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord );
+void SSRE_Math_CartesianToBarycentric33( SSRE_Vec4_t* out, 
 									    const SSRE_Vec4_t* pointA,
 									    const SSRE_Vec4_t* pointB,
 									    const SSRE_Vec4_t* pointC,
 									    const SSRE_Vec4_t* coord );
 
 /**
- * Barycentric to Cartesian (3D)
+ * Barycentric to Cartesian
  * @param out Output cartesian coordinates.
  * @param pointA Point a
  * @param pointB Point b
  * @param pointC Point c
  * @param coord Barycentric coordinate.
  */
-void SSRE_Math_BarycentricToCartesian3( SSRE_Vec4_t* out,
+void SSRE_Math_BarycentricToCartesian32( SSRE_Vec4_t* out,
+									    const SSRE_Vec4_t* pointA,
+									    const SSRE_Vec4_t* pointB,
+									    const SSRE_Vec4_t* pointC,
+									    const SSRE_Vec4_t* coord );
+void SSRE_Math_BarycentricToCartesian33( SSRE_Vec4_t* out,
 									    const SSRE_Vec4_t* pointA,
 									    const SSRE_Vec4_t* pointB,
 									    const SSRE_Vec4_t* pointC,
