@@ -28,7 +28,9 @@ THE SOFTWARE.
 #include "SSRE_Fixed.h"
 #include "SSRE_Vec4.h"
 #include "SSRE_Mat44.h"
+#include "SSRE_MatrixStack.h"
 #include "SSRE_Math.h"
+#include "SSRE_VertexProcessor.h"
 
 /**
  * Get library version.
