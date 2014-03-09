@@ -90,7 +90,7 @@ void simpleTestDraw( u32* pixels, int width, int height )
 			// Scale up.
 			SSRE_Vec4_Div( &pixel, &pixel, &halfRes );
 		
-			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
+			SSRE_Math_CartesianToBarycentric33( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
 			
 			if( pixelBarycentric.x >= 0 && 
 				pixelBarycentric.y >= 0 && 
@@ -182,7 +182,7 @@ void simpleTestDrawRegioned( u32* pixels, int width, int height )
 			 x <= maxPixel.x; 
 			 ++x, pixel.x += invHalfRes.x, ++outPixels )
 		{
-			SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
+			SSRE_Math_CartesianToBarycentric33( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
 			
 			if( pixelBarycentric.x >= 0 && 
 				pixelBarycentric.y >= 0 && 
@@ -197,7 +197,7 @@ void simpleTestDrawRegioned( u32* pixels, int width, int height )
 	}
 }
 
-void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32* colours )
+void drawTriangle( PixelBuffer_t* buffer, const SSRE_Vec4_t* points, u32* colours )
 {
 	SSRE_Fixed_t x, y;
 	int ret0, ret1;
@@ -282,8 +282,8 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32* colours )
 					 pixel.x < edge1.x;  
 					 pixel.x += invHalfRes.x, ++outPixels )
 				{
-#if 0
-					SSRE_Math_CartesianToBarycentric3( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
+#if 1
+					SSRE_Math_CartesianToBarycentric23( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
 			
 					// Clamp.
 					pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
@@ -305,12 +305,14 @@ void drawTriangle( PixelBuffer_t* buffer, SSRE_Vec4_t* points, u32* colours )
 
 int main( int argc, char* argv[] )
 {
+	int i;
 	u32 timerStart;
 	u32 timerEnd;
 	u32 frameCount = 0;
 	u32 frameTicker = 0;
 	SSRE_Vec4_t tri[3];
 	SSRE_Vec4_t outTri[3];
+	const SSRE_Vec4_t* firstVertex;
 	u32 colours[3] = 
 	{
 		0xff0000ff,
@@ -320,17 +322,18 @@ int main( int argc, char* argv[] )
 
 	SSRE_Mat44_t worldMat;
 	SSRE_Mat44_t viewMat;
-	SSRE_Mat44_t worldViewMat;
 	SSRE_Mat44_t projMat;
 	SSRE_Mat44_t clipMat;
+	SSRE_MatrixStack_t* matrixStack = SSRE_MatrixStack_Create( 16 );
+	SSRE_VertexProcessor_t* vertexProcessor = SSRE_VertexProcessor_Create( 256 );
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* texture = NULL;
 	PixelBuffer_t buffer = 
 	{
 		NULL,
-		640,
-		480
+		240,
+		160
 	};
 	u32 shouldQuit = 0;
 	buffer.pixels = (u32*)malloc( buffer.w * buffer.h * sizeof( u32 ) );
@@ -338,8 +341,8 @@ int main( int argc, char* argv[] )
 	SSRE_Mat44_Identity( &viewMat );
 	SSRE_Mat44_Identity( &projMat );
 	SSRE_Mat44_Identity( &clipMat );
-	
-	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w * 2, buffer.h * 2, 0 );
+
+	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w * 3, buffer.h * 3, 0 );
 	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
 	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, buffer.w, buffer.h );
 
@@ -389,25 +392,24 @@ int main( int argc, char* argv[] )
 		viewMat.rows[3].z = SSRE_FIXED_ONE << 2;
 
 		SSRE_Mat44_Perspective( &projMat, 8, SSRE_FIXED_ONE, SSRE_Fixed_FromFloat( 1.0f ), SSRE_Fixed_FromFloat( 20.0f ) );
-		SSRE_Mat44_Multiply( &worldViewMat, &worldMat, &viewMat );
-		SSRE_Mat44_Multiply( &clipMat, &worldViewMat, &projMat );
+
+
+		// Matrices onto stack.
+		SSRE_MatrixStack_Push( matrixStack, &projMat );
+		SSRE_MatrixStack_Push( matrixStack, &viewMat );
+		SSRE_MatrixStack_Push( matrixStack, &worldMat );
+		SSRE_MatrixStack_Get( &clipMat, matrixStack );
 		
-		// Transform vertices.
-		SSRE_Mat44_MultiplyVec3( &outTri[0], &clipMat, &tri[0] );
-		SSRE_Mat44_MultiplyVec3( &outTri[1], &clipMat, &tri[1] );
-		SSRE_Mat44_MultiplyVec3( &outTri[2], &clipMat, &tri[2] );
+		// Process vertices.
+		SSRE_VertexProcessor_Reset( vertexProcessor );
+		firstVertex = SSRE_VertexProcessor_Process( vertexProcessor, 3, tri, &clipMat );
 
-		// W divide.
-		SSRE_Vec4_DivScalar3( &outTri[0], &outTri[0], outTri[0].w );
-		SSRE_Vec4_DivScalar3( &outTri[1], &outTri[1], outTri[1].w );
-		SSRE_Vec4_DivScalar3( &outTri[2], &outTri[2], outTri[2].w );
+		for(i = 0; i < 1; ++i)
+		{
+			drawTriangle( &buffer, firstVertex, colours );
+		}
 
-		// Flatten.
-		outTri[0].z = 0;
-		outTri[1].z = 0;
-		outTri[2].z = 0;
-
-		drawTriangle( &buffer, outTri, colours );
+		SSRE_MatrixStack_Pop( matrixStack, 3 );
 
 		SDL_UpdateTexture(texture, NULL, buffer.pixels, buffer.w * sizeof ( u32 ));
 		SDL_RenderClear(renderer);
@@ -417,17 +419,20 @@ int main( int argc, char* argv[] )
 		++frameCount;
 		frameTicker += 1;
 
-		if( frameCount == 10 )
+		if( frameCount == 60 )
 		{
 			timerEnd = SDL_GetTicks();
 
-			SDL_Log( "10 frames rendered in %u ms (%f ms per frame )\n", timerEnd - timerStart, (float)(timerEnd - timerStart) / 10.0f );
+			SDL_Log( "60 frames rendered in %u ms (%f ms per frame )\n", timerEnd - timerStart, (float)(timerEnd - timerStart) / 60.0f );
 
 			timerStart = timerEnd;
 			frameCount = 0;
 		}
 	}
 	while( !shouldQuit );
+
+	SSRE_MatrixStack_Destroy( matrixStack );
+	SSRE_VertexProcessor_Destroy( vertexProcessor );
 
 	free( buffer.pixels );
 
