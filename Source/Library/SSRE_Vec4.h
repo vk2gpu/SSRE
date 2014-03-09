@@ -143,7 +143,7 @@ SSRE_Fixed_t SSRE_Vec4_Dot( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
  * @param lhs
  * @param rhs
  */
-void SSRE_Vec4_Cross2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs );
+void SSRE_Vec4_Cross2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 void SSRE_Vec4_Cross3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**

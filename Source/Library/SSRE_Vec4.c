@@ -245,12 +245,15 @@ SSRE_Fixed_t SSRE_Vec4_Dot( const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 	return mul.x + mul.y + mul.z + mul.w;
 }
 
-void SSRE_Vec4_Cross2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs )
+void SSRE_Vec4_Cross2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	assert( out != lhs );
+	assert( out != rhs );
 
-	out->x = -lhs->y;
-	out->y = lhs->x;
+	// Substitude in 0 for all Z.
+	out->x = 0;
+	out->y = 0;
+	out->z = SSRE_Fixed_Mul( lhs->x, rhs->y ) - SSRE_Fixed_Mul( lhs->y, rhs->x );
 }
 
 void SSRE_Vec4_Cross3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, const SSRE_Vec4_t* rhs )
