@@ -36,168 +36,7 @@ typedef struct
 	int h;
 } PixelBuffer_t;
 
-void simpleTestDraw( u32* pixels, int width, int height )
-{
-	int x, y;
-	SSRE_Vec4_t pixel;
-	SSRE_Vec4_t pixelBarycentric;
-	SSRE_Vec4_t halfRes;
-	SSRE_Vec4_t tri[3];
-	u32 colours[3] = 
-	{
-		0xff0000ff,
-		0x00ff00ff,
-		0x0000ffff,
-	};
-
-	// Setup half res.
-	halfRes.x = ( width << SSRE_FIXED_PRECISION ) >> 1;
-	halfRes.y = ( height << SSRE_FIXED_PRECISION ) >> 1;
-	halfRes.z = 1;
-	halfRes.w = 1;
-
-	
-	// Setup simple triangle.
-	tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
-	tri[0].y = SSRE_Fixed_FromFloat( -1.0f );
-	tri[0].z = 0;
-	tri[0].w = 0;
-
-	tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
-	tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
-	tri[1].z = 0;
-	tri[1].w = 0;
-
-	tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
-	tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
-	tri[2].z = 0;
-	tri[2].w = 0;
-
-	// Iterate over all pixels and check if we are in bounds or not.
-	for( y = 0; y < height; ++y )
-	{
-		for( x = 0; x < width; ++x )
-		{
-			// Convert screen space to clip space to keep from going beyond our 16 bit range.
-			pixel.x = x << SSRE_FIXED_PRECISION;
-			pixel.y = y << SSRE_FIXED_PRECISION;
-			pixel.z = 1;
-			pixel.w = 1;
-
-			// Offset.
-			SSRE_Vec4_Sub( &pixel, &pixel, &halfRes );
-
-			// Scale up.
-			SSRE_Vec4_Div( &pixel, &pixel, &halfRes );
-		
-			SSRE_Math_CartesianToBarycentric33( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
-			
-			if( pixelBarycentric.x >= 0 && 
-				pixelBarycentric.y >= 0 && 
-				pixelBarycentric.z >= 0 &&
-				pixelBarycentric.x <= SSRE_FIXED_ONE && 
-				pixelBarycentric.y <= SSRE_FIXED_ONE && 
-				pixelBarycentric.z <= SSRE_FIXED_ONE ) 
-			{
-				u32 outColour = SSRE_Math_LerpColourR8G8B8A8( 3, colours, &pixelBarycentric.x );
-				*pixels++ = outColour;
-			}
-		}
-	}	
-}
-
-void simpleTestDrawRegioned( u32* pixels, int width, int height )
-{
-	int x, y;
-	u32* outPixels;
-	SSRE_Vec4_t pixel = { 0, 0, 0, 0 };
-	SSRE_Vec4_t pixelBarycentric = { 0, 0, 0, 0 };
-	SSRE_Vec4_t halfRes = { 0, 0, 0, 0 };
-	SSRE_Vec4_t invHalfRes = { 0, 0, 0, 0 };
-	SSRE_Vec4_t tri[3];
-	SSRE_Vec4_t minCoord = { 0, 0, 0, 0 };
-	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
-	SSRE_Vec4_t minPixel = { 0, 0, 0, 0 };
-	SSRE_Vec4_t maxPixel = { 0, 0, 0, 0 };
-	u32 colours[3] = 
-	{
-		0xff0000ff,
-		0x00ff00ff,
-		0x0000ffff,
-	};
-
-	// Setup half res.
-	halfRes.x = ( width << SSRE_FIXED_PRECISION ) >> 1;
-	halfRes.y = ( height << SSRE_FIXED_PRECISION ) >> 1;
-	halfRes.z = 1;
-	halfRes.w = 1;
-
-	// Setup inv res.
-	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
-
-	// Setup simple triangle.
-	tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
-	tri[0].y = SSRE_Fixed_FromFloat( -0.5f );
-	tri[0].z = 0;
-	tri[0].w = 0;
-
-	tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
-	tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
-	tri[1].z = 0;
-	tri[1].w = 0;
-
-	tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
-	tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
-	tri[2].z = 0;
-	tri[2].w = 0;
-
-	// Find min/max width and height so we don't try to render to the full screen.
-	SSRE_Vec4_Less2( &minCoord, &tri[0], &tri[1] );
-	SSRE_Vec4_Less2( &minCoord, &minCoord, &tri[2] );
-	SSRE_Vec4_Greater2( &maxCoord, &tri[0], &tri[1] );
-	SSRE_Vec4_Greater2( &maxCoord, &maxCoord, &tri[2] );
-
-	// Scale down.
-	SSRE_Vec4_Mul2( &minPixel, &minCoord, &halfRes );
-	SSRE_Vec4_Mul2( &maxPixel, &maxCoord, &halfRes );
-
-	// Offset.
-	SSRE_Vec4_Add2( &minPixel, &minPixel, &halfRes );
-	SSRE_Vec4_Add2( &maxPixel, &maxPixel, &halfRes );
-
-	minPixel.x >>= SSRE_FIXED_PRECISION;
-	minPixel.y >>= SSRE_FIXED_PRECISION;
-	maxPixel.x >>= SSRE_FIXED_PRECISION;
-	maxPixel.y >>= SSRE_FIXED_PRECISION;
-
-
-	// Determine if any primitives lie on this scanline.
-	for( y = minPixel.y, pixel.y = minCoord.y; 
-		 y <= maxPixel.y;
-		 ++y, pixel.y += invHalfRes.y )
-	{
-		outPixels = &pixels[ minPixel.x + y * width ];
-
-		for( x = minPixel.x, pixel.x = minCoord.x; 
-			 x <= maxPixel.x; 
-			 ++x, pixel.x += invHalfRes.x, ++outPixels )
-		{
-			SSRE_Math_CartesianToBarycentric33( &pixelBarycentric, &tri[0], &tri[1], &tri[2], &pixel );
-			
-			if( pixelBarycentric.x >= 0 && 
-				pixelBarycentric.y >= 0 && 
-				pixelBarycentric.z >= 0 &&
-				pixelBarycentric.x <= SSRE_FIXED_ONE && 
-				pixelBarycentric.y <= SSRE_FIXED_ONE && 
-				pixelBarycentric.z <= SSRE_FIXED_ONE ) 
-			{
-				*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, colours, &pixelBarycentric.x );
-			}
-		}
-	}
-}
-
-void drawTriangle( PixelBuffer_t* buffer, const SSRE_Vec4_t* points, u32* colours )
+void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
 {
 	SSRE_Fixed_t x, y;
 	int ret0, ret1;
@@ -213,6 +52,9 @@ void drawTriangle( PixelBuffer_t* buffer, const SSRE_Vec4_t* points, u32* colour
 	SSRE_Vec4_t maxPixel = { 0, 0, 0, 0 };
 	SSRE_Vec4_t edge0, edge1;
 	SSRE_Vec4_t line0, line1;
+	const SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
+	const SSRE_Vec4_t* point1 = (const SSRE_Vec4_t*)(((char*)points) + vertexStride);
+	const SSRE_Vec4_t* point2 = (const SSRE_Vec4_t*)(((char*)points) + ( vertexStride << 1 ));
 
 	// Setup half res.
 	halfRes.x = ( buffer->w << SSRE_FIXED_PRECISION ) >> 1;
@@ -224,17 +66,10 @@ void drawTriangle( PixelBuffer_t* buffer, const SSRE_Vec4_t* points, u32* colour
 	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
 
 	// Find min/max width and height so we don't try to render to the full screen.
-#if 0
-	SSRE_Vec4_Less2( &minCoord, &points[0], &points[1] );
-	SSRE_Vec4_Less2( &minCoord, &minCoord, &points[2] );
-	SSRE_Vec4_Greater2( &maxCoord, &points[0], &points[1] );
-	SSRE_Vec4_Greater2( &maxCoord, &maxCoord, &points[2] );
-#else
 	minCoord.x = -SSRE_FIXED_ONE;
 	minCoord.y = -SSRE_FIXED_ONE;
 	maxCoord.x = SSRE_FIXED_ONE;
 	maxCoord.y = SSRE_FIXED_ONE;
-#endif 
 
 	// Scale down.
 	SSRE_Vec4_Mul2( &minPixel, &minCoord, &halfRes );
@@ -249,9 +84,7 @@ void drawTriangle( PixelBuffer_t* buffer, const SSRE_Vec4_t* points, u32* colour
 	minPixel.y >>= SSRE_FIXED_PRECISION;
 	maxPixel.x >>= SSRE_FIXED_PRECISION;
 	maxPixel.y >>= SSRE_FIXED_PRECISION;
-
-	// Screen space points.
-
+	
 	// Determine if any primitives lie on this scanline.
 	for( y = minPixel.y, pixel.y = minCoord.y; 
 		 y <= maxPixel.y;
@@ -261,10 +94,10 @@ void drawTriangle( PixelBuffer_t* buffer, const SSRE_Vec4_t* points, u32* colour
 		line0.y = pixel.y;
 		line1.x = maxCoord.x;
 		line1.y = pixel.y;
-		ret0 = SSRE_Math_LineTriangleIntersection2( &edge0, &line0, &line1, &points[0], &points[1], &points[2], SSRE_MATH_INTERSECTION_SEGMENT );
+		ret0 = SSRE_Math_LineTriangleIntersection2( &edge0, &line0, &line1, point0, point1, point2, SSRE_MATH_INTERSECTION_SEGMENT );
 		if( ret0 == SSRE_MATH_INTERSECTION_SEGMENT )
 		{
-			ret1 = SSRE_Math_LineTriangleIntersection2( &edge1, &line1, &line0, &points[0], &points[1], &points[2], SSRE_MATH_INTERSECTION_SEGMENT );
+			ret1 = SSRE_Math_LineTriangleIntersection2( &edge1, &line1, &line0, point0, point1, point2, SSRE_MATH_INTERSECTION_SEGMENT );
 			if( ret1 == SSRE_MATH_INTERSECTION_SEGMENT )
 			{
 				if( edge0.x > edge1.x )
@@ -282,26 +115,86 @@ void drawTriangle( PixelBuffer_t* buffer, const SSRE_Vec4_t* points, u32* colour
 					 pixel.x < edge1.x;  
 					 pixel.x += invHalfRes.x, ++outPixels )
 				{
-#if 1
-					SSRE_Math_CartesianToBarycentric23( &pixelBarycentric, &points[0], &points[1], &points[2], &pixel );
+					if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
+					{
+						SSRE_Math_CartesianToBarycentric23( &pixelBarycentric, point0, point1, point2, &pixel );
 			
-					// Clamp.
-					pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
-					pixelBarycentric.y = pixelBarycentric.y < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.y;
-					pixelBarycentric.z = pixelBarycentric.z < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.z;
-					pixelBarycentric.x = pixelBarycentric.x > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.x;
-					pixelBarycentric.y = pixelBarycentric.y > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.y;
-					pixelBarycentric.z = pixelBarycentric.z > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.z;
+						// Clamp.
+						pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
+						pixelBarycentric.y = pixelBarycentric.y < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.y;
+						pixelBarycentric.z = pixelBarycentric.z < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.z;
+						pixelBarycentric.x = pixelBarycentric.x > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.x;
+						pixelBarycentric.y = pixelBarycentric.y > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.y;
+						pixelBarycentric.z = pixelBarycentric.z > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.z;
 
-					*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, colours, &pixelBarycentric.x );
-#else
-					*outPixels = colours[0];
-#endif
+						*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, point0 + 1, vertexStride, &pixelBarycentric.x );
+					}
+					else
+					{
+						*outPixels = 0xc0c0c0c0;
+					}
 				}
 			}
 		}
 	}
 }
+
+static SSRE_VertexPCT_t s_CubeVertices[] = 
+{
+	// Front face.
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+
+	// back face.
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	// Top face.
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	// Bottom face.
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	// Right face.
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	// Left face.
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xffffffff, 0, 0 },
+};
 
 int main( int argc, char* argv[] )
 {
@@ -312,11 +205,18 @@ int main( int argc, char* argv[] )
 	u32 frameTicker = 0;
 	SSRE_Vec4_t tri[3];
 	SSRE_Vec4_t outTri[3];
-	const SSRE_Vec4_t* firstVertex;
-	u32 colours[3] = 
+	const SSRE_VertexPCT_t* firstVertex;
+	u32 coloursA[3] = 
 	{
 		0xff0000ff,
-		0x00ff00ff,
+		0xff0000ff,
+		0xff0000ff,
+	};
+
+	u32 coloursB[3] = 
+	{
+		0x0000ffff,
+		0x0000ffff,
 		0x0000ffff,
 	};
 
@@ -325,7 +225,10 @@ int main( int argc, char* argv[] )
 	SSRE_Mat44_t projMat;
 	SSRE_Mat44_t clipMat;
 	SSRE_MatrixStack_t* matrixStack = SSRE_MatrixStack_Create( 16 );
-	SSRE_VertexProcessor_t* vertexProcessor = SSRE_VertexProcessor_Create( 256 );
+	SSRE_VertexProcessor_t* vertexProcessor = SSRE_VertexProcessor_Create( 256, SSRE_VERTEX_HAS_POSITION | 
+	                                                                            SSRE_VERTEX_HAS_COLOUR |
+	                                                                            SSRE_VERTEX_HAS_UV, 
+																				sizeof( SSRE_VertexPCT_t ) );
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* texture = NULL;
@@ -369,27 +272,27 @@ int main( int argc, char* argv[] )
 
 		// Setup simple triangle.
 
-		tri[0].x = SSRE_Fixed_FromFloat( 0.0f );
-		tri[0].y = SSRE_Fixed_FromFloat( -0.5f );
-		tri[0].z = SSRE_FIXED_ZERO;
+		tri[0].x = SSRE_Fixed_Sin( frameTicker >> 2 ) ;////SSRE_Fixed_FromFloat( -0.1f );
+		tri[0].y = SSRE_Fixed_FromFloat( -1.0f );
+		tri[0].z = SSRE_FIXED_ONE;
 		tri[0].w = SSRE_FIXED_ONE;
 
-		tri[1].x = SSRE_Fixed_FromFloat( 0.5f );
-		tri[1].y = SSRE_Fixed_FromFloat( 0.5f );
-		tri[1].z = SSRE_FIXED_ZERO;
+		tri[1].x = SSRE_Fixed_FromFloat( 1.0f );
+		tri[1].y = SSRE_Fixed_FromFloat( 1.0f );
+		tri[1].z = SSRE_FIXED_ONE;
 		tri[1].w = SSRE_FIXED_ONE;
 
-		tri[2].x = SSRE_Fixed_FromFloat( -0.5f );
-		tri[2].y = SSRE_Fixed_FromFloat( 0.5f );
-		tri[2].z = SSRE_FIXED_ZERO;
+		tri[2].x = SSRE_Fixed_FromFloat( -1.0f );
+		tri[2].y = SSRE_Fixed_FromFloat( 1.0f );
+		tri[2].z = SSRE_FIXED_ONE;
 		tri[2].w = SSRE_FIXED_ONE;
 
-		SSRE_Mat44_Rotation( &worldMat, frameTicker, 0, 0 );
+		SSRE_Mat44_Rotation( &worldMat, frameTicker, frameTicker >> 3, frameTicker >> 4 );
 		SSRE_Mat44_Rotation( &viewMat, 0, 0, 0 );
 
 		viewMat.rows[3].x = 0;
 		viewMat.rows[3].y = 0;
-		viewMat.rows[3].z = SSRE_FIXED_ONE << 2;
+		viewMat.rows[3].z = SSRE_FIXED_ONE << 3;
 
 		SSRE_Mat44_Perspective( &projMat, 8, SSRE_FIXED_ONE, SSRE_Fixed_FromFloat( 1.0f ), SSRE_Fixed_FromFloat( 20.0f ) );
 
@@ -401,14 +304,20 @@ int main( int argc, char* argv[] )
 		SSRE_MatrixStack_Get( &clipMat, matrixStack );
 		
 		// Process vertices.
+#if 1
+		SSRE_VertexProcessor_Reset( vertexProcessor );
+		firstVertex = SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
+		//SSRE_VertexProcessor_SortTriangles( vertexProcessor );
+
+		for( i = 0; i < 4; ++i )
+		{
+			drawTriangle( &buffer, firstVertex + ( i * 3 ), vertexProcessor->vertexType, vertexProcessor->vertexStride );
+		}
+#else
 		SSRE_VertexProcessor_Reset( vertexProcessor );
 		firstVertex = SSRE_VertexProcessor_Process( vertexProcessor, 3, tri, &clipMat );
-
-		for(i = 0; i < 1; ++i)
-		{
-			drawTriangle( &buffer, firstVertex, colours );
-		}
-
+		drawTriangle( &buffer, firstVertex, colours );
+#endif
 		SSRE_MatrixStack_Pop( matrixStack, 3 );
 
 		SDL_UpdateTexture(texture, NULL, buffer.pixels, buffer.w * sizeof ( u32 ));
