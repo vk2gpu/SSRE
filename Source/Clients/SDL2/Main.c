@@ -38,7 +38,7 @@ typedef struct
 
 void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
 {
-	SSRE_Fixed_t y;
+	int x, y;
 	int ret0, ret1;
 	int off;
 	u32* outPixels;
@@ -48,8 +48,6 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	SSRE_Vec4_t invHalfRes = { 0, 0, 0, 0 };
 	SSRE_Vec4_t minCoord = { 0, 0, 0, 0 };
 	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
-	SSRE_Vec4_t minPixel = { 0, 0, 0, 0 };
-	SSRE_Vec4_t maxPixel = { 0, 0, 0, 0 };
 	SSRE_Vec4_t edge0, edge1;
 	SSRE_Vec4_t line0, line1;
 	const SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
@@ -67,43 +65,30 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	}
 	
 	// Setup half res.
-	halfRes.x = ( buffer->w << SSRE_FIXED_PRECISION ) >> 1;
-	halfRes.y = ( buffer->h << SSRE_FIXED_PRECISION ) >> 1;
+	halfRes.x = ( ( ( buffer->w / 1 ) << SSRE_FIXED_PRECISION ) >> 1 );
+	halfRes.y = ( ( ( buffer->h / 1 ) << SSRE_FIXED_PRECISION ) >> 1 );
 	halfRes.z = 1;
 	halfRes.w = 1;
 
 	// Setup inv res.
 	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
 
-	// Find min/max width and height so we don't try to render to the full screen.
-	minCoord.x = -SSRE_FIXED_ONE;
-	minCoord.y = -SSRE_FIXED_ONE;
-	maxCoord.x = SSRE_FIXED_ONE;
-	maxCoord.y = SSRE_FIXED_ONE;
-
-	// Scale down.
-	SSRE_Vec4_Mul2( &minPixel, &minCoord, &halfRes );
-	SSRE_Vec4_Mul2( &maxPixel, &maxCoord, &halfRes );
-
-	// Offset.
-	SSRE_Vec4_Add2( &minPixel, &minPixel, &halfRes );
-	SSRE_Vec4_Add2( &maxPixel, &maxPixel, &halfRes );
-
-	// Back to integers.
-	minPixel.x >>= SSRE_FIXED_PRECISION;
-	minPixel.y >>= SSRE_FIXED_PRECISION;
-	maxPixel.x >>= SSRE_FIXED_PRECISION;
-	maxPixel.y >>= SSRE_FIXED_PRECISION;
+	// Clip space coords.
+	minCoord.x = -1 << SSRE_FIXED_PRECISION;
+	minCoord.y = -1 << SSRE_FIXED_PRECISION;
+	maxCoord.x = 1 << SSRE_FIXED_PRECISION;
+	maxCoord.y = 1 << SSRE_FIXED_PRECISION;
 	
 	// Determine if any primitives lie on this scanline.
-	for( y = minPixel.y, pixel.y = minCoord.y; 
-		 y <= maxPixel.y;
-		 ++y, pixel.y += invHalfRes.y )
+	for( y = 0; y < buffer->h; ++y )
 	{
+		pixel.y = SSRE_Fixed_Div( ( ( y - ( buffer->h >> 1 ) ) << SSRE_FIXED_PRECISION ), buffer->h << SSRE_FIXED_PRECISION );
+
 		line0.x = minCoord.x;
 		line0.y = pixel.y;
 		line1.x = maxCoord.x;
 		line1.y = pixel.y;
+
 		ret0 = SSRE_Math_LineTriangleIntersection2( &edge0, &line0, &line1, point0, point1, point2, SSRE_MATH_INTERSECTION_SEGMENT );
 		if( ret0 == SSRE_MATH_INTERSECTION_SEGMENT )
 		{
@@ -117,32 +102,46 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 					edge1.x = temp;
 				}
 
-				off = SSRE_Fixed_Mul( edge0.x, halfRes.x );
-				off = off + halfRes.x ;
-				off = off >> SSRE_FIXED_PRECISION;
-				outPixels = &buffer->pixels[ off + y * buffer->w ];
-				for( pixel.x = edge0.x; 
-					 pixel.x < edge1.x;  
-					 pixel.x += invHalfRes.x, ++outPixels )
+				//off = SSRE_Fixed_Mul( edge0.x, halfRes.x );
+				//off = off + halfRes.x ;
+				//off = off >> SSRE_FIXED_PRECISION;
+				for( x = 0; x < buffer->w; ++x, ++outPixels )
 				{
-					if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
+					pixel.x = SSRE_Fixed_Div( ( ( x - ( buffer->w >> 1 ) ) << SSRE_FIXED_PRECISION ), buffer->w << SSRE_FIXED_PRECISION );
+
+					if( x == 0 && y == 0 )
 					{
-						SSRE_Math_CartesianToBarycentric33( &pixelBarycentric, point0, point1, point2, &pixel );
+						int a = 0; ++a;
+					}
+					outPixels = &buffer->pixels[ x + y * buffer->w ];
+					SSRE_Math_CartesianToBarycentric23( &pixelBarycentric, point0, point1, point2, &pixel );
+					if( pixelBarycentric.x >= 0 && pixelBarycentric.x <= SSRE_FIXED_ONE &&
+						pixelBarycentric.y >= 0 && pixelBarycentric.y <= SSRE_FIXED_ONE &&
+						pixelBarycentric.z >= 0 && pixelBarycentric.z <= SSRE_FIXED_ONE )
+					{
+#if 1
+						if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
+						{
 			
-						// Clamp.
-						pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
-						pixelBarycentric.y = pixelBarycentric.y < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.y;
-						pixelBarycentric.z = pixelBarycentric.z < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.z;
-						pixelBarycentric.x = pixelBarycentric.x > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.x;
-						pixelBarycentric.y = pixelBarycentric.y > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.y;
-						pixelBarycentric.z = pixelBarycentric.z > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.z;
+							// Clamp.
+							pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
+							pixelBarycentric.y = pixelBarycentric.y < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.y;
+							pixelBarycentric.z = pixelBarycentric.z < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.z;
+							pixelBarycentric.x = pixelBarycentric.x > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.x;
+							pixelBarycentric.y = pixelBarycentric.y > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.y;
+							pixelBarycentric.z = pixelBarycentric.z > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.z;
 						
-						*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, point0 + 1, vertexStride, &pixelBarycentric.x );
-					}
-					else
-					{
+							*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, point0 + 1, vertexStride, &pixelBarycentric.x );
+						}
+						else
+						{
+							*outPixels = 0xc0c0c0c0;
+						}
+#else
 						*outPixels = 0xc0c0c0c0;
+#endif
 					}
+
 				}
 			}
 		}
@@ -295,7 +294,7 @@ int main( int argc, char* argv[] )
 			SSRE_Mat44_Rotation( &worldMat, frameTicker, frameTicker >> 3, frameTicker >> 6 );
 			worldMat.rows[3].x = 0;
 			worldMat.rows[3].y = 0;
-			worldMat.rows[3].z = -SSRE_FIXED_ONE << 3;
+			worldMat.rows[3].z = -SSRE_FIXED_ONE << 4;
 
 			SSRE_MatrixStack_Push( matrixStack, &worldMat );
 
