@@ -111,9 +111,10 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
  * Mix R8G8B8A8 colours.
  * @param num Number of colours.
  * @param colours Array of colours.
+ * @param stride Stride.
  * @param amounts Array of amounts (0.0-1.0)
  */
-u32 SSRE_Math_LerpColourR8G8B8A8( int num, const u32* colours, const SSRE_Fixed_t* amounts );
+u32 SSRE_Math_LerpColourR8G8B8A8( int num, const void* colours, u32 stride, const SSRE_Fixed_t* amounts );
 
 #endif
 

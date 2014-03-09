@@ -173,7 +173,7 @@ int SSRE_Math_LineLineIntersection2( SSRE_Vec4_t* out,
 									 const SSRE_Vec4_t* lineB1 )
 
 {
-	const SSRE_Fixed_t epsilon = SSRE_FIXED_SMALLEST_VALUE;
+	const SSRE_Fixed_t epsilon = 0;
 	const SSRE_Fixed_t Aa = lineA1->y - lineA0->y;
 	const SSRE_Fixed_t Ab = lineA0->x - lineA1->x;
 	const SSRE_Fixed_t Ac = SSRE_Fixed_Mul( Aa, lineA0->x ) + SSRE_Fixed_Mul( Ab, lineA0->y );
@@ -278,7 +278,7 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
 	return nearestDist == 0x7fffffff ? SSRE_MATH_INTERSECTION_NONE : wantedIntersection;
 }
 
-u32 SSRE_Math_LerpColourR8G8B8A8( int num, const char* colours, u32 stride, const SSRE_Fixed_t* amounts )
+u32 SSRE_Math_LerpColourR8G8B8A8( int num, const void* colours, u32 stride, const SSRE_Fixed_t* amounts )
 {
 	int i;
 	SSRE_Vec4_t col = { 0, 0, 0, 0 };
@@ -286,15 +286,15 @@ u32 SSRE_Math_LerpColourR8G8B8A8( int num, const char* colours, u32 stride, cons
 	for( i = 0; i < num; ++i )
 	{
 		SSRE_Vec4_t in;
-		in.x = ( *((u32*)colours) & 0x000000ff ) << SSRE_FIXED_PRECISION;
-		in.y = ( *((u32*)colours) & 0x0000ff00 ) >> 8 << SSRE_FIXED_PRECISION;
-		in.z = ( *((u32*)colours) & 0x00ff0000 ) >> 16 << SSRE_FIXED_PRECISION;
-		in.w = ( *((u32*)colours) & 0xff000000 ) >> 24 << SSRE_FIXED_PRECISION;
+		in.x = ( *((const u32*)colours) & 0x000000ff ) << SSRE_FIXED_PRECISION;
+		in.y = ( *((const u32*)colours) & 0x0000ff00 ) >> 8 << SSRE_FIXED_PRECISION;
+		in.z = ( *((const u32*)colours) & 0x00ff0000 ) >> 16 << SSRE_FIXED_PRECISION;
+		in.w = ( *((const u32*)colours) & 0xff000000 ) >> 24 << SSRE_FIXED_PRECISION;
 
 		SSRE_Vec4_MulScalar( &in, &in, amounts[i] );
 		SSRE_Vec4_Add( &col, &col, &in );
 
-		colours += stride;
+		colours = (const char*)colours + stride;
 	}
 
 	// Floor to int.

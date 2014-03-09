@@ -79,10 +79,6 @@ const void* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcesso
 
 			// W divide.
 			SSRE_Vec4_DivScalar3( (SSRE_Vec4_t*)outVertex, (SSRE_Vec4_t*)outVertex, ((SSRE_Vec4_t*)outVertex)->w );
-			if( ((SSRE_Vec4_t*)outVertex)->z == -1 )
-			{
-				int a = 0; ++a;
-			}
 
 			// Advance.
 			outVertex += vertexProcessor->vertexStride;

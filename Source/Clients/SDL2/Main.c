@@ -38,7 +38,7 @@ typedef struct
 
 void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
 {
-	SSRE_Fixed_t x, y;
+	SSRE_Fixed_t y;
 	int ret0, ret1;
 	int off;
 	u32* outPixels;
@@ -60,13 +60,12 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	// Calculate facing of triangle so we can cull back facing.
 	SSRE_Vec4_Sub3( &cross20, point2, point0 );
 	SSRE_Vec4_Sub3( &cross21, point1, point0 );
-	SSRE_Vec4_Cross2( &cross123, &cross20, &cross21 );
+	SSRE_Vec4_Cross2( &cross123, &cross21, &cross20 );
 	if( cross123.z > 0 )
 	{
 		return;
 	}
-
-
+	
 	// Setup half res.
 	halfRes.x = ( buffer->w << SSRE_FIXED_PRECISION ) >> 1;
 	halfRes.y = ( buffer->h << SSRE_FIXED_PRECISION ) >> 1;
@@ -128,7 +127,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 				{
 					if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
 					{
-						SSRE_Math_CartesianToBarycentric23( &pixelBarycentric, point0, point1, point2, &pixel );
+						SSRE_Math_CartesianToBarycentric33( &pixelBarycentric, point0, point1, point2, &pixel );
 			
 						// Clamp.
 						pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
@@ -137,7 +136,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 						pixelBarycentric.x = pixelBarycentric.x > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.x;
 						pixelBarycentric.y = pixelBarycentric.y > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.y;
 						pixelBarycentric.z = pixelBarycentric.z > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.z;
-
+						
 						*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, point0 + 1, vertexStride, &pixelBarycentric.x );
 					}
 					else
@@ -214,26 +213,12 @@ int main( int argc, char* argv[] )
 	u32 timerEnd;
 	u32 frameCount = 0;
 	u32 frameTicker = 0;
-	SSRE_Vec4_t tri[3];
-	SSRE_Vec4_t outTri[3];
 	const SSRE_VertexPCT_t* firstVertex;
-	u32 coloursA[3] = 
-	{
-		0xff0000ff,
-		0xff0000ff,
-		0xff0000ff,
-	};
-
-	u32 coloursB[3] = 
-	{
-		0x0000ffff,
-		0x0000ffff,
-		0x0000ffff,
-	};
 
 	SSRE_Mat44_t worldMat;
 	SSRE_Mat44_t viewMat;
 	SSRE_Mat44_t projMat;
+	SSRE_Mat44_t ssMat;
 	SSRE_Mat44_t clipMat;
 	SSRE_MatrixStack_t* matrixStack = SSRE_MatrixStack_Create( 16 );
 	SSRE_VertexProcessor_t* vertexProcessor = SSRE_VertexProcessor_Create( 256, SSRE_VERTEX_HAS_POSITION | 
@@ -249,6 +234,14 @@ int main( int argc, char* argv[] )
 		240,
 		160
 	};
+	SSRE_Vec4_t halfRes = 
+	{ 
+		( buffer.w >> 1 ) << SSRE_FIXED_PRECISION,
+		( buffer.h >> 1 ) << SSRE_FIXED_PRECISION,
+		0, 
+		0 
+	};
+
 	u32 shouldQuit = 0;
 	buffer.pixels = (u32*)malloc( buffer.w * buffer.h * sizeof( u32 ) );
 	SSRE_Mat44_Identity( &worldMat );
@@ -279,56 +272,44 @@ int main( int argc, char* argv[] )
 
 		memset( buffer.pixels, 0x0, sizeof( u32 ) * buffer.w * buffer.h );
 
-		//simpleTestDrawRegioned( pixels, width, height );
+		// Reset vertex processor.
+		SSRE_VertexProcessor_Reset( vertexProcessor );
 
-		// Setup simple triangle.
+		// Generate screen space matrix.
+		SSRE_Mat44_Identity( &ssMat );
+		//ssMat.rows[0].x = halfRes.x;
+		//ssMat.rows[1].y = halfRes.y;
+		//ssMat.rows[3].x = halfRes.x;
+		//ssMat.rows[3].y = halfRes.y;
 
-		tri[0].x = SSRE_Fixed_Sin( frameTicker >> 2 ) ;////SSRE_Fixed_FromFloat( -0.1f );
-		tri[0].y = SSRE_Fixed_FromFloat( -1.0f );
-		tri[0].z = SSRE_FIXED_ONE;
-		tri[0].w = SSRE_FIXED_ONE;
-
-		tri[1].x = SSRE_Fixed_FromFloat( 1.0f );
-		tri[1].y = SSRE_Fixed_FromFloat( 1.0f );
-		tri[1].z = SSRE_FIXED_ONE;
-		tri[1].w = SSRE_FIXED_ONE;
-
-		tri[2].x = SSRE_Fixed_FromFloat( -1.0f );
-		tri[2].y = SSRE_Fixed_FromFloat( 1.0f );
-		tri[2].z = SSRE_FIXED_ONE;
-		tri[2].w = SSRE_FIXED_ONE;
-
-		SSRE_Mat44_Rotation( &worldMat, frameTicker, frameTicker >> 3, frameTicker >> 6 );
-		SSRE_Mat44_Rotation( &viewMat, 0, 0, 0 );
-
-		viewMat.rows[3].x = 0;
-		viewMat.rows[3].y = 0;
-		viewMat.rows[3].z = SSRE_FIXED_ONE << 3;
-
-		SSRE_Mat44_Perspective( &projMat, 8, SSRE_FIXED_ONE, SSRE_Fixed_FromFloat( 1.0f ), SSRE_Fixed_FromFloat( 20.0f ) );
-
+		// Generate perspective.
+		SSRE_Mat44_Perspective( &projMat, 8, SSRE_Fixed_Div( halfRes.y, halfRes.x ), SSRE_Fixed_FromFloat( 1.0f ), SSRE_Fixed_FromFloat( 10.0f ) );
 
 		// Matrices onto stack.
+		SSRE_MatrixStack_Push( matrixStack, &ssMat );
 		SSRE_MatrixStack_Push( matrixStack, &projMat );
 		SSRE_MatrixStack_Push( matrixStack, &viewMat );
-		SSRE_MatrixStack_Push( matrixStack, &worldMat );
-		SSRE_MatrixStack_Get( &clipMat, matrixStack );
-		
-		// Process vertices.
-#if 1
-		SSRE_VertexProcessor_Reset( vertexProcessor );
-		firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
-		//SSRE_VertexProcessor_SortTriangles( vertexProcessor );
 
-		for( i = 0; i < 12; ++i )
+		// Draw model.
 		{
-			drawTriangle( &buffer, firstVertex + ( i * 3 ), vertexProcessor->vertexType, vertexProcessor->vertexStride );
+			SSRE_Mat44_Rotation( &worldMat, frameTicker, frameTicker >> 3, frameTicker >> 6 );
+			worldMat.rows[3].x = 0;
+			worldMat.rows[3].y = 0;
+			worldMat.rows[3].z = -SSRE_FIXED_ONE << 3;
+
+			SSRE_MatrixStack_Push( matrixStack, &worldMat );
+
+			SSRE_MatrixStack_Get( &clipMat, matrixStack );
+			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
+			for( i = 0; i < 12; ++i )
+			{
+				drawTriangle( &buffer, firstVertex + ( i * 3 ), vertexProcessor->vertexType, vertexProcessor->vertexStride );
+			}
+
+			SSRE_MatrixStack_Pop( matrixStack, 1 );
 		}
-#else
-		SSRE_VertexProcessor_Reset( vertexProcessor );
-		firstVertex = SSRE_VertexProcessor_Process( vertexProcessor, 3, tri, &clipMat );
-		drawTriangle( &buffer, firstVertex, colours );
-#endif
+
+		// Pop proj and view.
 		SSRE_MatrixStack_Pop( matrixStack, 3 );
 
 		SDL_UpdateTexture(texture, NULL, buffer.pixels, buffer.w * sizeof ( u32 ));
@@ -338,7 +319,7 @@ int main( int argc, char* argv[] )
 
 		++frameCount;
 		frameTicker += 1;
-
+		
 		if( frameCount == 60 )
 		{
 			timerEnd = SDL_GetTicks();
