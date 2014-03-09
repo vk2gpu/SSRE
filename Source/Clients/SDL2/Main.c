@@ -306,8 +306,8 @@ int main( int argc, char* argv[] )
 		// Process vertices.
 #if 1
 		SSRE_VertexProcessor_Reset( vertexProcessor );
-		firstVertex = SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
-		//SSRE_VertexProcessor_SortTriangles( vertexProcessor );
+		firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 12, s_CubeVertices, &clipMat );
+		SSRE_VertexProcessor_SortTriangles( vertexProcessor );
 
 		for( i = 0; i < 4; ++i )
 		{

@@ -79,6 +79,10 @@ const void* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcesso
 
 			// W divide.
 			SSRE_Vec4_DivScalar3( (SSRE_Vec4_t*)outVertex, (SSRE_Vec4_t*)outVertex, ((SSRE_Vec4_t*)outVertex)->w );
+			if( ((SSRE_Vec4_t*)outVertex)->z == -1 )
+			{
+				int a = 0; ++a;
+			}
 
 			// Advance.
 			outVertex += vertexProcessor->vertexStride;
@@ -129,39 +133,33 @@ const void* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcesso
 	return firstVertex;
 }
 
+static SSRE_VertexProcessor_t* s_CmpFunc_ActiveVertexProcessor = NULL;
 static int _SSRE_VertexProcessor_SortTriangles_CmpFunc(const void* inA, const void* inB)
 {
 	const SSRE_Vec4_t* triA = (const SSRE_Vec4_t*)inA;
 	const SSRE_Vec4_t* triB = (const SSRE_Vec4_t*)inB;
-	SSRE_Fixed_t a = triA[0].z;
-	SSRE_Fixed_t b = triB[0].z;
+	SSRE_Fixed_t a = triA->z;
+	SSRE_Fixed_t b = triB->z;
 
-	if( triA[1].z > a )
-	{
-		a = triA[1].z;
-	}
+	triA = (const SSRE_Vec4_t*)((char*)triA + s_CmpFunc_ActiveVertexProcessor->vertexStride );
+	triB = (const SSRE_Vec4_t*)((char*)triB + s_CmpFunc_ActiveVertexProcessor->vertexStride );
+	a = triA->z < a ? triA->z : a;
+	b = triB->z < b ? triB->z : b;
 
-	if( triA[2].z > a )
-	{
-		a = triA[2].z;
-	}
-
-	if( triB[1].z > b )
-	{
-		b = triB[1].z;
-	}
-
-	if( triB[2].z > b )
-	{
-		b = triB[2].z;
-	}
+	triA = (const SSRE_Vec4_t*)((char*)triA + s_CmpFunc_ActiveVertexProcessor->vertexStride );
+	triB = (const SSRE_Vec4_t*)((char*)triB + s_CmpFunc_ActiveVertexProcessor->vertexStride );
+	a = triA->z < a ? triA->z : a;
+	b = triB->z < b ? triB->z : b;
 
 	return b - a;
 }
 
 void SSRE_VertexProcessor_SortTriangles( SSRE_VertexProcessor_t* vertexProcessor )
 {
+	assert( s_CmpFunc_ActiveVertexProcessor == NULL );
+	s_CmpFunc_ActiveVertexProcessor = vertexProcessor;
 	qsort( vertexProcessor->vertices, vertexProcessor->currVertex / 3, vertexProcessor->vertexStride * 3, _SSRE_VertexProcessor_SortTriangles_CmpFunc );
+	s_CmpFunc_ActiveVertexProcessor = NULL;
 }
 
 void SSRE_VertexProcessor_Reset( SSRE_VertexProcessor_t* vertexProcessor )
