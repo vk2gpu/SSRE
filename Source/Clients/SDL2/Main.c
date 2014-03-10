@@ -83,9 +83,9 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	maxCoord.x = SSRE_Fixed_Clamp( maxCoord.x, 0, ( buffer->w - 1 ) << SSRE_FIXED_PRECISION );
 	maxCoord.y = SSRE_Fixed_Clamp( maxCoord.y, 0, ( buffer->h - 1 ) << SSRE_FIXED_PRECISION );
 
-	pixelBias.x = 0;//( ( point2.x < point1.x ) || ( point2.y > point1.y ) ) ? 0 : -1;
-	pixelBias.y = 0;//( ( point0.x < point2.x ) || ( point0.y > point2.y ) ) ? 0 : -1;
-	pixelBias.z = 0;//( ( point1.x < point0.x ) || ( point1.y > point0.y ) ) ? 0 : -1;
+	pixelBias.x = ( ( point2->x < point1->x ) || ( point2->y > point1->y ) ) ? 0 : -1;
+	pixelBias.y = ( ( point0->x < point2->x ) || ( point0->y > point2->y ) ) ? 0 : -1;
+	pixelBias.z = ( ( point1->x < point0->x ) || ( point1->y > point0->y ) ) ? 0 : -1;
 	
 	// Determine if any primitives lie on this scanline.
 	for( y = minCoord.y; y <= maxCoord.y; y += SSRE_FIXED_ONE )
