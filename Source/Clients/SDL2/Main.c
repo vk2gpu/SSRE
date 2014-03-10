@@ -289,7 +289,7 @@ int main( int argc, char* argv[] )
 			SSRE_MatrixStack_Get( &clipMat, matrixStack );
 			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
 
-			for( j = 0; j < 1;++j )
+			for( j = 0; j < 1000;++j )
 			{
 				for( i = 0; i < 12; ++i )
 				{

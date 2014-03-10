@@ -291,7 +291,7 @@ u32 SSRE_Math_LerpColourR8G8B8A8( int num, const void* colours, u32 stride, cons
 		in.z = ( *((const u32*)colours) & 0x00ff0000 ) >> 16 << SSRE_FIXED_PRECISION;
 		in.w = ( *((const u32*)colours) & 0xff000000 ) >> 24 << SSRE_FIXED_PRECISION;
 
-		SSRE_Vec4_MulScalar( &in, &in, amounts[i] );
+		SSRE_Vec4_FastMulScalar( &in, &in, amounts[i] );
 		SSRE_Vec4_Add( &col, &col, &in );
 
 		colours = (const char*)colours + stride;
