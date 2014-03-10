@@ -36,172 +36,154 @@ typedef struct
 	int h;
 } PixelBuffer_t;
 
+SSRE_Fixed_t SSRE_Math_OrientationTest2( SSRE_Fixed_t aX, SSRE_Fixed_t aY, 
+                                         SSRE_Fixed_t bX, SSRE_Fixed_t bY, 
+                                         SSRE_Fixed_t cX, SSRE_Fixed_t cY )
+{
+    return SSRE_Fixed_Mul( ( bX - aX ), ( cY - aY ) ) - SSRE_Fixed_Mul( ( bY - aY ), ( cX - aX ) );
+}
+
+SSRE_Fixed_t SSRE_Math_IsTopLeft( SSRE_Fixed_t aX, SSRE_Fixed_t aY, 
+								  SSRE_Fixed_t bX, SSRE_Fixed_t bY )
+{
+	return aY == bY || aX < bX;
+}
+
 void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
 {
 	int x, y;
-	int ret0, ret1;
-	int off;
 	u32* outPixels;
 	SSRE_Vec4_t pixel = { 0, 0, 0, 0 };
 	SSRE_Vec4_t pixelBarycentric = { 0, 0, 0, 0 };
-	SSRE_Vec4_t halfRes = { 0, 0, 0, 0 };
-	SSRE_Vec4_t invHalfRes = { 0, 0, 0, 0 };
+	SSRE_Vec4_t pixelBias = { 0, 0, 0, 0 };
 	SSRE_Vec4_t minCoord = { 0, 0, 0, 0 };
 	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
-	SSRE_Vec4_t edge0, edge1;
-	SSRE_Vec4_t line0, line1;
-	const SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
-	const SSRE_Vec4_t* point1 = (const SSRE_Vec4_t*)(((char*)points) + vertexStride);
-	const SSRE_Vec4_t* point2 = (const SSRE_Vec4_t*)(((char*)points) + ( vertexStride << 1 ));
+	SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
+	SSRE_Vec4_t* point1 = (const SSRE_Vec4_t*)(((char*)points) + vertexStride);
+	SSRE_Vec4_t* point2 = (const SSRE_Vec4_t*)(((char*)points) + ( vertexStride << 1 ));
 	SSRE_Vec4_t cross20, cross21, cross123;
 
 	// Calculate facing of triangle so we can cull back facing.
 	SSRE_Vec4_Sub3( &cross20, point2, point0 );
 	SSRE_Vec4_Sub3( &cross21, point1, point0 );
 	SSRE_Vec4_Cross2( &cross123, &cross21, &cross20 );
-	if( cross123.z > 0 )
+	if( cross123.z < 0 )
 	{
 		return;
 	}
-	
-	// Setup half res.
-	halfRes.x = ( ( ( buffer->w / 1 ) << SSRE_FIXED_PRECISION ) >> 1 );
-	halfRes.y = ( ( ( buffer->h / 1 ) << SSRE_FIXED_PRECISION ) >> 1 );
-	halfRes.z = 1;
-	halfRes.w = 1;
 
-	// Setup inv res.
-	SSRE_Vec4_Rcp2( &invHalfRes, &halfRes );
+		
+	minCoord.x = ( SSRE_Fixed_Min3( point0->x, point1->x, point2->x ) ) & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
+	minCoord.y = ( SSRE_Fixed_Min3( point0->y, point1->y, point2->y ) ) & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
+	maxCoord.x = SSRE_Fixed_Max3( point0->x, point1->x, point2->x );
+	maxCoord.y = SSRE_Fixed_Max3( point0->y, point1->y, point2->y );
 
-	// Clip space coords.
-	minCoord.x = -1 << SSRE_FIXED_PRECISION;
-	minCoord.y = -1 << SSRE_FIXED_PRECISION;
-	maxCoord.x = 1 << SSRE_FIXED_PRECISION;
-	maxCoord.y = 1 << SSRE_FIXED_PRECISION;
+	minCoord.x = SSRE_Fixed_Clamp( minCoord.x, 0, ( buffer->w - 1 ) << SSRE_FIXED_PRECISION );
+	minCoord.y = SSRE_Fixed_Clamp( minCoord.y, 0, ( buffer->h - 1 ) << SSRE_FIXED_PRECISION );
+	maxCoord.x = SSRE_Fixed_Clamp( maxCoord.x, 0, ( buffer->w - 1 ) << SSRE_FIXED_PRECISION );
+	maxCoord.y = SSRE_Fixed_Clamp( maxCoord.y, 0, ( buffer->h - 1 ) << SSRE_FIXED_PRECISION );
+
+	pixelBias.x = 0;//( ( point2.x < point1.x ) || ( point2.y > point1.y ) ) ? 0 : -1;
+	pixelBias.y = 0;//( ( point0.x < point2.x ) || ( point0.y > point2.y ) ) ? 0 : -1;
+	pixelBias.z = 0;//( ( point1.x < point0.x ) || ( point1.y > point0.y ) ) ? 0 : -1;
 	
 	// Determine if any primitives lie on this scanline.
-	for( y = 0; y < buffer->h; ++y )
-	{
-		pixel.y = SSRE_Fixed_Div( ( ( y - ( buffer->h >> 1 ) ) << SSRE_FIXED_PRECISION ), buffer->h << SSRE_FIXED_PRECISION );
+	for( y = minCoord.y; y <= maxCoord.y; y += SSRE_FIXED_ONE )
+	{	
+		outPixels = &buffer->pixels[ ( minCoord.x >> SSRE_FIXED_PRECISION ) + ( y >> SSRE_FIXED_PRECISION ) * buffer->w ];
 
-		line0.x = minCoord.x;
-		line0.y = pixel.y;
-		line1.x = maxCoord.x;
-		line1.y = pixel.y;
-
-		ret0 = SSRE_Math_LineTriangleIntersection2( &edge0, &line0, &line1, point0, point1, point2, SSRE_MATH_INTERSECTION_SEGMENT );
-		if( ret0 == SSRE_MATH_INTERSECTION_SEGMENT )
+		for( x = minCoord.x; x <= maxCoord.x; x += SSRE_FIXED_ONE, ++outPixels )
 		{
-			ret1 = SSRE_Math_LineTriangleIntersection2( &edge1, &line1, &line0, point0, point1, point2, SSRE_MATH_INTERSECTION_SEGMENT );
-			if( ret1 == SSRE_MATH_INTERSECTION_SEGMENT )
+			pixelBarycentric.x = SSRE_Math_OrientationTest2( point1->x, point1->y, point2->x, point2->y, x, y );
+			pixelBarycentric.y = SSRE_Math_OrientationTest2( point2->x, point2->y, point0->x, point0->y, x, y );
+			pixelBarycentric.z = SSRE_Math_OrientationTest2( point0->x, point0->y, point1->x, point1->y, x, y );
+			SSRE_Vec4_Add3( &pixelBarycentric, &pixelBarycentric, &pixelBias );
+
+			if( ( pixelBarycentric.x | pixelBarycentric.y | pixelBarycentric.z ) >= 0 )
 			{
-				if( edge0.x > edge1.x )
+				// Compensate for some precision loss when we try to renormalise.
+				pixelBarycentric.x >>= SSRE_FIXED_PRECISION;
+				pixelBarycentric.y >>= SSRE_FIXED_PRECISION;
+				pixelBarycentric.z >>= SSRE_FIXED_PRECISION;
+
+				// Renormalise.
+				SSRE_Vec4_Nrm3( &pixelBarycentric, &pixelBarycentric );
+
+				if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
 				{
-					SSRE_Fixed_t temp = edge0.x;
-					edge0.x = edge1.x;
-					edge1.x = temp;
+					*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, ((SSRE_Vec4_t*)points) + 1, vertexStride, &pixelBarycentric.x );
 				}
-
-				//off = SSRE_Fixed_Mul( edge0.x, halfRes.x );
-				//off = off + halfRes.x ;
-				//off = off >> SSRE_FIXED_PRECISION;
-				for( x = 0; x < buffer->w; ++x, ++outPixels )
+				else
 				{
-					pixel.x = SSRE_Fixed_Div( ( ( x - ( buffer->w >> 1 ) ) << SSRE_FIXED_PRECISION ), buffer->w << SSRE_FIXED_PRECISION );
-
-					if( x == 0 && y == 0 )
-					{
-						int a = 0; ++a;
-					}
-					outPixels = &buffer->pixels[ x + y * buffer->w ];
-					SSRE_Math_CartesianToBarycentric23( &pixelBarycentric, point0, point1, point2, &pixel );
-					if( pixelBarycentric.x >= 0 && pixelBarycentric.x <= SSRE_FIXED_ONE &&
-						pixelBarycentric.y >= 0 && pixelBarycentric.y <= SSRE_FIXED_ONE &&
-						pixelBarycentric.z >= 0 && pixelBarycentric.z <= SSRE_FIXED_ONE )
-					{
-#if 1
-						if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
-						{
-			
-							// Clamp.
-							pixelBarycentric.x = pixelBarycentric.x < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.x;
-							pixelBarycentric.y = pixelBarycentric.y < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.y;
-							pixelBarycentric.z = pixelBarycentric.z < SSRE_FIXED_ZERO ? SSRE_FIXED_ZERO : pixelBarycentric.z;
-							pixelBarycentric.x = pixelBarycentric.x > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.x;
-							pixelBarycentric.y = pixelBarycentric.y > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.y;
-							pixelBarycentric.z = pixelBarycentric.z > SSRE_FIXED_ONE ? SSRE_FIXED_ONE : pixelBarycentric.z;
-						
-							*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, point0 + 1, vertexStride, &pixelBarycentric.x );
-						}
-						else
-						{
-							*outPixels = 0xc0c0c0c0;
-						}
-#else
-						*outPixels = 0xc0c0c0c0;
-#endif
-					}
-
+					*outPixels = 0xc0c0c0c0;
 				}
 			}
 		}
 	}
 }
 
+static SSRE_VertexPCT_t s_TriangleVertices[] = 
+{
+	// Top face.
+	{ { SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  0.5f ), SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+};
+
 static SSRE_VertexPCT_t s_CubeVertices[] = 
 {
 	// Top face.
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 
 	// bottom face.
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 
 	// back face.
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 
 	// front face.
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 
 	// Right face.
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 
 	// Left face.
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
 };
 
@@ -276,10 +258,10 @@ int main( int argc, char* argv[] )
 
 		// Generate screen space matrix.
 		SSRE_Mat44_Identity( &ssMat );
-		//ssMat.rows[0].x = halfRes.x;
-		//ssMat.rows[1].y = halfRes.y;
-		//ssMat.rows[3].x = halfRes.x;
-		//ssMat.rows[3].y = halfRes.y;
+		ssMat.rows[0].x = halfRes.x;
+		ssMat.rows[1].y = halfRes.y;
+		ssMat.rows[3].x = halfRes.x;
+		ssMat.rows[3].y = halfRes.y;
 
 		// Generate perspective.
 		SSRE_Mat44_Perspective( &projMat, 8, SSRE_Fixed_Div( halfRes.y, halfRes.x ), SSRE_Fixed_FromFloat( 1.0f ), SSRE_Fixed_FromFloat( 10.0f ) );
@@ -291,10 +273,10 @@ int main( int argc, char* argv[] )
 
 		// Draw model.
 		{
-			SSRE_Mat44_Rotation( &worldMat, frameTicker, frameTicker >> 3, frameTicker >> 6 );
+			SSRE_Mat44_Rotation( &worldMat, frameTicker , frameTicker >> 3, frameTicker >> 6 );
 			worldMat.rows[3].x = 0;
 			worldMat.rows[3].y = 0;
-			worldMat.rows[3].z = -SSRE_FIXED_ONE << 4;
+			worldMat.rows[3].z = -SSRE_FIXED_ONE << 3;
 
 			SSRE_MatrixStack_Push( matrixStack, &worldMat );
 

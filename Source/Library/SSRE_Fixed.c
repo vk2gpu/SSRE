@@ -548,7 +548,6 @@ SSRE_Fixed_t SSRE_Fixed_Sqrt( SSRE_Fixed_t lhs )
 	register u64 v = lhs;
 	register u64 x = v >> 1;
 	register u64 a = 0;
-
 	if( v > 0 && x != 0 )
 	{
 		do
@@ -557,7 +556,6 @@ SSRE_Fixed_t SSRE_Fixed_Sqrt( SSRE_Fixed_t lhs )
 			x = ( ( ( x + a ) << SSRE_FIXED_DOUBLE_PRECISION ) / SSRE_FIXED_TWO ) >> SSRE_FIXED_PRECISION;
 		}
 		while( ( x * x ) > ( v << SSRE_FIXED_PRECISION ) );
-
 		return (SSRE_Fixed_t)x;
 	}
 

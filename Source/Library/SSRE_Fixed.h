@@ -34,7 +34,7 @@ typedef s32 SSRE_Fixed_t;
 /**
  * Fixed point precision level.
  */
-#define SSRE_FIXED_PRECISION			( 16 )
+#define SSRE_FIXED_PRECISION			( 12 )
 #define SSRE_FIXED_DOUBLE_PRECISION		( SSRE_FIXED_PRECISION << 1 )
 #define SSRE_FIXED_HALF_PRECISION		( SSRE_FIXED_PRECISION >> 1 )
 #define SSRE_FIXED_FLOAT_STEP			( 1.0f / (float)( 1 << SSRE_FIXED_PRECISION ) )
@@ -117,6 +117,23 @@ SSRE_Fixed_t SSRE_Fixed_Cos( int lhs );
 SSRE_Fixed_t SSRE_Fixed_Tan( int lhs );
 
 /**
+ * Fixed point min.
+ */
+SSRE_Fixed_t SSRE_Fixed_Min2( SSRE_Fixed_t a, SSRE_Fixed_t b );
+SSRE_Fixed_t SSRE_Fixed_Min3( SSRE_Fixed_t a, SSRE_Fixed_t b, SSRE_Fixed_t c );
+
+/**
+ * Fixed point max.
+ */
+SSRE_Fixed_t SSRE_Fixed_Max2( SSRE_Fixed_t a, SSRE_Fixed_t b );
+SSRE_Fixed_t SSRE_Fixed_Max3( SSRE_Fixed_t a, SSRE_Fixed_t b, SSRE_Fixed_t c );
+
+/**
+ * Fixed point clamp.
+ */
+SSRE_Fixed_t SSRE_Fixed_Clamp( SSRE_Fixed_t val, SSRE_Fixed_t min, SSRE_Fixed_t max );
+
+/**
  * Functions.
  */
 static SSRE_Fixed_t SSRE_Fixed_Mul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
@@ -139,5 +156,31 @@ static SSRE_Fixed_t SSRE_Fixed_Rcp( SSRE_Fixed_t lhs )
 {
 	return lhs != 0 ? SSRE_Fixed_Div( SSRE_FIXED_ONE, lhs ) : 0;
 }
+
+static SSRE_Fixed_t SSRE_Fixed_Min2( SSRE_Fixed_t a, SSRE_Fixed_t b )
+{
+	return a < b ? a : b;
+}
+
+static SSRE_Fixed_t SSRE_Fixed_Min3( SSRE_Fixed_t a, SSRE_Fixed_t b, SSRE_Fixed_t c )
+{
+	return SSRE_Fixed_Min2( SSRE_Fixed_Min2( a, b ), c );
+}
+
+static SSRE_Fixed_t SSRE_Fixed_Max2( SSRE_Fixed_t a, SSRE_Fixed_t b )
+{
+	return a > b ? a : b;
+}
+
+static SSRE_Fixed_t SSRE_Fixed_Max3( SSRE_Fixed_t a, SSRE_Fixed_t b, SSRE_Fixed_t c )
+{
+	return SSRE_Fixed_Max2( SSRE_Fixed_Max2( a, b ), c );
+}
+
+static SSRE_Fixed_t SSRE_Fixed_Clamp( SSRE_Fixed_t val, SSRE_Fixed_t min, SSRE_Fixed_t max )
+{
+	return SSRE_Fixed_Min2( SSRE_Fixed_Max2( val, min ), max );
+}
+
 
 #endif
