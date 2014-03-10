@@ -53,8 +53,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	SSRE_Vec4_t baryRow = { 0, 0, 0, 0 };
 	SSRE_Vec4_t bary = { 0, 0, 0 ,0 };
 	SSRE_Vec4_t baryNrm = { 0, 0, 0 ,0 };
-	SSRE_Fixed_t baryInvTotal;
-
+	
 	// Calculate facing of triangle so we can cull back facing.
 	SSRE_Vec4_Sub3( &cross20, point2, point0 );
 	SSRE_Vec4_Sub3( &cross21, point1, point0 );
@@ -113,8 +112,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 					baryNrm.z = bary.z >> SSRE_FIXED_HALF_PRECISION;
 
 					// Renormalise. Approximation.
-					baryInvTotal = SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z );
-					SSRE_Vec4_MulScalar3( &baryNrm, &baryNrm, baryInvTotal );				
+					SSRE_Vec4_MulScalar3( &baryNrm, &baryNrm, SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z ) );				
 
 					*out = SSRE_Math_LerpColourR8G8B8A8( 3, ((SSRE_Vec4_t*)points) + 1, vertexStride, &baryNrm.x );
 				}
