@@ -75,7 +75,7 @@ const void* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcesso
 		for( i = 0; i < noofVertices; ++i )
 		{
 			// Transform.
-			SSRE_Mat44_MultiplyVec3( (SSRE_Vec4_t*)outVertex, matrix, (SSRE_Vec4_t*)inVertex );
+			SSRE_Mat44_Multiply3Vec4( (SSRE_Vec4_t*)outVertex, matrix, (SSRE_Vec4_t*)inVertex );
 
 			// W divide.
 			SSRE_Vec4_DivScalar3( (SSRE_Vec4_t*)outVertex, (SSRE_Vec4_t*)outVertex, ((SSRE_Vec4_t*)outVertex)->w );

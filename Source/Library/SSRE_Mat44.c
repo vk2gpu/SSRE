@@ -119,7 +119,7 @@ void SSRE_Mat44_Multiply( SSRE_Mat44_t* out, const SSRE_Mat44_t* lhs, const SSRE
 	out->rows[3].w = SSRE_Vec4_Dot( &column, &lhs->rows[3] );
 }
 
-void SSRE_Mat44_MultiplyVec3( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs )
+void SSRE_Mat44_Multiply3Vec4( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs )
 {
 	out->x = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].x ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].x ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].x ) + lhs->rows[3].x;
 	out->y = SSRE_Fixed_Mul( rhs->x, lhs->rows[0].y ) + SSRE_Fixed_Mul( rhs->y, lhs->rows[1].y ) + SSRE_Fixed_Mul( rhs->z, lhs->rows[2].y ) + lhs->rows[3].y;

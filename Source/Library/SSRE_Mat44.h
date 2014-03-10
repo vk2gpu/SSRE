@@ -65,7 +65,7 @@ void SSRE_Mat44_Multiply( SSRE_Mat44_t* out, const SSRE_Mat44_t* lhs, const SSRE
  * Multiply vec.
  * @param out
  */
-void SSRE_Mat44_MultiplyVec3( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs );
+void SSRE_Mat44_Multiply3Vec4( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs );
 void SSRE_Mat44_MultiplyVec4( SSRE_Vec4_t* out, const SSRE_Mat44_t* lhs, const SSRE_Vec4_t* rhs );
 
 /**
