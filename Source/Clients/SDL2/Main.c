@@ -104,17 +104,17 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 		{
 			if( ( bary.x | bary.y | bary.z ) >= 0 )
 			{
-				// Compensate for some precision loss when we try to renormalise.
-				baryNrm.x = bary.x >> SSRE_FIXED_PRECISION;
-				baryNrm.y = bary.y >> SSRE_FIXED_PRECISION;
-				baryNrm.z = bary.z >> SSRE_FIXED_PRECISION;
-
-				// Renormalise.
-				baryInvTotal = SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z );
-				SSRE_Vec4_MulScalar3( &baryNrm, &baryNrm, baryInvTotal );				
-				
 				if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
 				{
+					// Compensate for some precision loss when we try to renormalise.
+					baryNrm.x = bary.x >> SSRE_FIXED_HALF_PRECISION;
+					baryNrm.y = bary.y >> SSRE_FIXED_HALF_PRECISION;
+					baryNrm.z = bary.z >> SSRE_FIXED_HALF_PRECISION;
+
+					// Renormalise.
+					baryInvTotal = SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z );
+					SSRE_Vec4_MulScalar3( &baryNrm, &baryNrm, baryInvTotal );				
+
 					*out = SSRE_Math_LerpColourR8G8B8A8( 3, ((SSRE_Vec4_t*)points) + 1, vertexStride, &baryNrm.x );
 				}
 				else
@@ -196,7 +196,7 @@ static SSRE_VertexPCT_t s_CubeVertices[] =
 
 int main( int argc, char* argv[] )
 {
-	int i;
+	int i,j;
 	u32 timerStart;
 	u32 timerEnd;
 	u32 frameCount = 0;
@@ -289,9 +289,13 @@ int main( int argc, char* argv[] )
 
 			SSRE_MatrixStack_Get( &clipMat, matrixStack );
 			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
-			for( i = 0; i < 12; ++i )
+
+			for( j = 0; j < 1;++j )
 			{
-				drawTriangle( &buffer, firstVertex + ( i * 3 ), vertexProcessor->vertexType, vertexProcessor->vertexStride );
+				for( i = 0; i < 12; ++i )
+				{
+					drawTriangle( &buffer, firstVertex + ( i * 3 ), vertexProcessor->vertexType, vertexProcessor->vertexStride );
+				}
 			}
 
 			SSRE_MatrixStack_Pop( matrixStack, 1 );
