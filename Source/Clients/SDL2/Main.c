@@ -95,7 +95,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	// Setup output row of pixels.
 	outRow = &buffer->pixels[ minPixel.x + minPixel.y * buffer->w ];
 	
-	// Determine if any primitives lie on this scanline.
+	// Render all pixels which are in the triangle.
 	for( y = minPixel.y; y <= maxPixel.y; ++y, outRow += buffer->w )
 	{	
 		out = outRow;
