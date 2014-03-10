@@ -48,6 +48,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	const SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
 	const SSRE_Vec4_t* point1 = (const SSRE_Vec4_t*)(((char*)points) + vertexStride);
 	const SSRE_Vec4_t* point2 = (const SSRE_Vec4_t*)(((char*)points) + ( vertexStride << 1 ));
+	const u32* colour = (const u32*)(point0 + 1);
 	SSRE_Vec4_t cross20, cross21, cross123;
 	SSRE_Vec4_t baryAStep, baryBStep;
 	SSRE_Vec4_t baryRow = { 0, 0, 0, 0 };
@@ -112,13 +113,13 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 					baryNrm.z = bary.z >> SSRE_FIXED_HALF_PRECISION;
 
 					// Renormalise. Approximation.
-					SSRE_Vec4_MulScalar3( &baryNrm, &baryNrm, SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z ) );				
+					SSRE_Vec4_FastMulScalar3( &baryNrm, &baryNrm, SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z ) );				
 
-					*out = SSRE_Math_LerpColourR8G8B8A8( 3, ((SSRE_Vec4_t*)points) + 1, vertexStride, &baryNrm.x );
+					*out = SSRE_Math_LerpColourR8G8B8A8( 3, colour, vertexStride, &baryNrm.x );
 				}
 				else
 				{
-					*out = *(u32*)(((SSRE_Vec4_t*)points) + 1);
+					*out = *colour;
 				}
 			}
 			SSRE_Vec4_Add3( &bary, &bary, &baryAStep );
@@ -140,7 +141,7 @@ static SSRE_VertexPCT_t s_CubeVertices[] =
 {
 	// Top face.
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
@@ -289,7 +290,7 @@ int main( int argc, char* argv[] )
 			SSRE_MatrixStack_Get( &clipMat, matrixStack );
 			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
 
-			for( j = 0; j < 100;++j )
+			for( j = 0; j < 1; ++j )
 			{
 				for( i = 0; i < 12; ++i )
 				{
