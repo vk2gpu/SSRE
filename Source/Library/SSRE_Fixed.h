@@ -134,6 +134,11 @@ SSRE_Fixed_t SSRE_Fixed_Max3( SSRE_Fixed_t a, SSRE_Fixed_t b, SSRE_Fixed_t c );
 SSRE_Fixed_t SSRE_Fixed_Clamp( SSRE_Fixed_t val, SSRE_Fixed_t min, SSRE_Fixed_t max );
 
 /**
+ * Fixed point floor.
+ */
+SSRE_Fixed_t SSRE_Fixed_Floor( SSRE_Fixed_t val );
+
+/**
  * Functions.
  */
 static SSRE_Fixed_t SSRE_Fixed_Mul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
@@ -182,5 +187,9 @@ static SSRE_Fixed_t SSRE_Fixed_Clamp( SSRE_Fixed_t val, SSRE_Fixed_t min, SSRE_F
 	return SSRE_Fixed_Min2( SSRE_Fixed_Max2( val, min ), max );
 }
 
+static SSRE_Fixed_t SSRE_Fixed_Floor( SSRE_Fixed_t val )
+{
+	return val & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
+}
 
 #endif

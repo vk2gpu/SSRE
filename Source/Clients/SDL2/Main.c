@@ -63,8 +63,8 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 		return;
 	}
 
-	minCoord.x = ( SSRE_Fixed_Min3( point0->x, point1->x, point2->x ) ) & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
-	minCoord.y = ( SSRE_Fixed_Min3( point0->y, point1->y, point2->y ) ) & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
+	minCoord.x = SSRE_Fixed_Floor( SSRE_Fixed_Min3( point0->x, point1->x, point2->x ) );
+	minCoord.y = SSRE_Fixed_Floor( SSRE_Fixed_Min3( point0->y, point1->y, point2->y ) );
 	maxCoord.x = SSRE_Fixed_Max3( point0->x, point1->x, point2->x );
 	maxCoord.y = SSRE_Fixed_Max3( point0->y, point1->y, point2->y );
 
@@ -289,7 +289,7 @@ int main( int argc, char* argv[] )
 			SSRE_MatrixStack_Get( &clipMat, matrixStack );
 			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
 
-			for( j = 0; j < 1000;++j )
+			for( j = 0; j < 100;++j )
 			{
 				for( i = 0; i < 12; ++i )
 				{
