@@ -92,6 +92,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	baryRow.y = SSRE_Math_OrientationTest2( point2, point0, &minCoord );
 	baryRow.z = SSRE_Math_OrientationTest2( point0, point1, &minCoord );
 
+	// Setup output row of pixels.
 	outRow = &buffer->pixels[ minPixel.x + minPixel.y * buffer->w ];
 	
 	// Determine if any primitives lie on this scanline.
@@ -111,7 +112,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 					baryNrm.y = bary.y >> SSRE_FIXED_HALF_PRECISION;
 					baryNrm.z = bary.z >> SSRE_FIXED_HALF_PRECISION;
 
-					// Renormalise.
+					// Renormalise. Approximation.
 					baryInvTotal = SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z );
 					SSRE_Vec4_MulScalar3( &baryNrm, &baryNrm, baryInvTotal );				
 
