@@ -116,5 +116,12 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
  */
 u32 SSRE_Math_LerpColourR8G8B8A8( int num, const void* colours, u32 stride, const SSRE_Fixed_t* amounts );
 
+/**
+ * Det2 orientation.
+ */
+SSRE_Fixed_t SSRE_Math_OrientationTest2( const SSRE_Vec4_t* a, 
+                                         const SSRE_Vec4_t* b, 
+                                         const SSRE_Vec4_t* c);
+
 #endif
 

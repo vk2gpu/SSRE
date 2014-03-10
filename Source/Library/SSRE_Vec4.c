@@ -301,8 +301,8 @@ void SSRE_Vec4_Nrm2( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs )
 
 void SSRE_Vec4_Nrm3( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs )
 {
-	SSRE_Fixed_t mag = SSRE_Vec4_Mag3( lhs );
-	SSRE_Vec4_DivScalar3( out, lhs, mag );
+	SSRE_Fixed_t invMag = SSRE_Fixed_Rcp( SSRE_Vec4_Mag3( lhs ) );
+	SSRE_Vec4_MulScalar3( out, lhs, invMag );
 }
 
 void SSRE_Vec4_Nrm( SSRE_Vec4_t* out, SSRE_Vec4_t* lhs )

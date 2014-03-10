@@ -181,7 +181,7 @@ int SSRE_Math_LineLineIntersection2( SSRE_Vec4_t* out,
 	const SSRE_Fixed_t Bb = lineB0->x - lineB1->x;
 	const SSRE_Fixed_t Bc = SSRE_Fixed_Mul( Ba, lineB0->x ) + SSRE_Fixed_Mul( Bb, lineB0->y );
 	const SSRE_Fixed_t det = SSRE_Fixed_Mul( Aa, Bb ) - SSRE_Fixed_Mul( Ba, Ab );
-	SSRE_Fixed_t s, t, sDenom, tDenom;
+	SSRE_Fixed_t s, t;
 
 	if( det == 0 )
 	{
@@ -311,4 +311,11 @@ u32 SSRE_Math_LerpColourR8G8B8A8( int num, const void* colours, u32 stride, cons
 
 	// Pack for output.
 	return col.x | col.y << 8 | col.z << 16 | col.w << 24;
+}
+
+SSRE_Fixed_t SSRE_Math_OrientationTest2( const SSRE_Vec4_t* a, 
+                                         const SSRE_Vec4_t* b, 
+                                         const SSRE_Vec4_t* c)
+{
+    return SSRE_Fixed_Mul( ( b->x - a->x ), ( c->y - a->y ) ) - SSRE_Fixed_Mul( ( b->y - a->y ), ( c->x - a->x ) );
 }

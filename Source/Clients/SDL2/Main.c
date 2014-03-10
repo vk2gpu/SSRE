@@ -36,32 +36,24 @@ typedef struct
 	int h;
 } PixelBuffer_t;
 
-SSRE_Fixed_t SSRE_Math_OrientationTest2( SSRE_Fixed_t aX, SSRE_Fixed_t aY, 
-                                         SSRE_Fixed_t bX, SSRE_Fixed_t bY, 
-                                         SSRE_Fixed_t cX, SSRE_Fixed_t cY )
-{
-    return SSRE_Fixed_Mul( ( bX - aX ), ( cY - aY ) ) - SSRE_Fixed_Mul( ( bY - aY ), ( cX - aX ) );
-}
-
-SSRE_Fixed_t SSRE_Math_IsTopLeft( SSRE_Fixed_t aX, SSRE_Fixed_t aY, 
-								  SSRE_Fixed_t bX, SSRE_Fixed_t bY )
-{
-	return aY == bY || aX < bX;
-}
-
 void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
 {
 	int x, y;
-	u32* outPixels;
-	SSRE_Vec4_t pixel = { 0, 0, 0, 0 };
-	SSRE_Vec4_t pixelBarycentric = { 0, 0, 0, 0 };
-	SSRE_Vec4_t pixelBias = { 0, 0, 0, 0 };
+	u32* out;
+	u32* outRow;
 	SSRE_Vec4_t minCoord = { 0, 0, 0, 0 };
 	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
-	SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
-	SSRE_Vec4_t* point1 = (const SSRE_Vec4_t*)(((char*)points) + vertexStride);
-	SSRE_Vec4_t* point2 = (const SSRE_Vec4_t*)(((char*)points) + ( vertexStride << 1 ));
+	SSRE_Vec4_t minPixel = { 0, 0, 0, 0 };
+	SSRE_Vec4_t maxPixel = { 0, 0, 0, 0 };
+	const SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
+	const SSRE_Vec4_t* point1 = (const SSRE_Vec4_t*)(((char*)points) + vertexStride);
+	const SSRE_Vec4_t* point2 = (const SSRE_Vec4_t*)(((char*)points) + ( vertexStride << 1 ));
 	SSRE_Vec4_t cross20, cross21, cross123;
+	SSRE_Vec4_t baryAStep, baryBStep;
+	SSRE_Vec4_t baryRow = { 0, 0, 0, 0 };
+	SSRE_Vec4_t bary = { 0, 0, 0 ,0 };
+	SSRE_Vec4_t baryNrm = { 0, 0, 0 ,0 };
+	SSRE_Fixed_t baryInvTotal;
 
 	// Calculate facing of triangle so we can cull back facing.
 	SSRE_Vec4_Sub3( &cross20, point2, point0 );
@@ -72,7 +64,6 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 		return;
 	}
 
-		
 	minCoord.x = ( SSRE_Fixed_Min3( point0->x, point1->x, point2->x ) ) & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
 	minCoord.y = ( SSRE_Fixed_Min3( point0->y, point1->y, point2->y ) ) & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
 	maxCoord.x = SSRE_Fixed_Max3( point0->x, point1->x, point2->x );
@@ -83,42 +74,58 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	maxCoord.x = SSRE_Fixed_Clamp( maxCoord.x, 0, ( buffer->w - 1 ) << SSRE_FIXED_PRECISION );
 	maxCoord.y = SSRE_Fixed_Clamp( maxCoord.y, 0, ( buffer->h - 1 ) << SSRE_FIXED_PRECISION );
 
-	pixelBias.x = ( ( point2->x < point1->x ) || ( point2->y > point1->y ) ) ? 0 : -1;
-	pixelBias.y = ( ( point0->x < point2->x ) || ( point0->y > point2->y ) ) ? 0 : -1;
-	pixelBias.z = ( ( point1->x < point0->x ) || ( point1->y > point0->y ) ) ? 0 : -1;
+	minPixel.x = minCoord.x >> SSRE_FIXED_PRECISION;
+	minPixel.y = minCoord.y >> SSRE_FIXED_PRECISION;
+	maxPixel.x = maxCoord.x >> SSRE_FIXED_PRECISION;
+	maxPixel.y = maxCoord.y >> SSRE_FIXED_PRECISION;
+
+	// Barycentric step values.
+	baryAStep.x = point1->y - point2->y;
+	baryAStep.y = point2->y - point0->y;
+	baryAStep.z = point0->y - point1->y;
+	baryBStep.x = point2->x - point1->x;
+	baryBStep.y = point0->x - point2->x;
+	baryBStep.z = point1->x - point0->x;
+
+	// Set initial top left barycentric coords.
+	baryRow.x = SSRE_Math_OrientationTest2( point1, point2, &minCoord );
+	baryRow.y = SSRE_Math_OrientationTest2( point2, point0, &minCoord );
+	baryRow.z = SSRE_Math_OrientationTest2( point0, point1, &minCoord );
+
+	outRow = &buffer->pixels[ minPixel.x + minPixel.y * buffer->w ];
 	
 	// Determine if any primitives lie on this scanline.
-	for( y = minCoord.y; y <= maxCoord.y; y += SSRE_FIXED_ONE )
+	for( y = minPixel.y; y <= maxPixel.y; ++y, outRow += buffer->w )
 	{	
-		outPixels = &buffer->pixels[ ( minCoord.x >> SSRE_FIXED_PRECISION ) + ( y >> SSRE_FIXED_PRECISION ) * buffer->w ];
+		out = outRow;
+		bary = baryRow;
 
-		for( x = minCoord.x; x <= maxCoord.x; x += SSRE_FIXED_ONE, ++outPixels )
+		for( x = minPixel.x; x <= maxPixel.x; ++x, ++out )
 		{
-			pixelBarycentric.x = SSRE_Math_OrientationTest2( point1->x, point1->y, point2->x, point2->y, x, y );
-			pixelBarycentric.y = SSRE_Math_OrientationTest2( point2->x, point2->y, point0->x, point0->y, x, y );
-			pixelBarycentric.z = SSRE_Math_OrientationTest2( point0->x, point0->y, point1->x, point1->y, x, y );
-			SSRE_Vec4_Add3( &pixelBarycentric, &pixelBarycentric, &pixelBias );
-
-			if( ( pixelBarycentric.x | pixelBarycentric.y | pixelBarycentric.z ) >= 0 )
+			if( ( bary.x | bary.y | bary.z ) >= 0 )
 			{
 				// Compensate for some precision loss when we try to renormalise.
-				pixelBarycentric.x >>= SSRE_FIXED_PRECISION;
-				pixelBarycentric.y >>= SSRE_FIXED_PRECISION;
-				pixelBarycentric.z >>= SSRE_FIXED_PRECISION;
+				baryNrm.x = bary.x >> SSRE_FIXED_PRECISION;
+				baryNrm.y = bary.y >> SSRE_FIXED_PRECISION;
+				baryNrm.z = bary.z >> SSRE_FIXED_PRECISION;
 
 				// Renormalise.
-				SSRE_Vec4_Nrm3( &pixelBarycentric, &pixelBarycentric );
-
+				baryInvTotal = SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z );
+				SSRE_Vec4_MulScalar3( &baryNrm, &baryNrm, baryInvTotal );				
+				
 				if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
 				{
-					*outPixels = SSRE_Math_LerpColourR8G8B8A8( 3, ((SSRE_Vec4_t*)points) + 1, vertexStride, &pixelBarycentric.x );
+					*out = SSRE_Math_LerpColourR8G8B8A8( 3, ((SSRE_Vec4_t*)points) + 1, vertexStride, &baryNrm.x );
 				}
 				else
 				{
-					*outPixels = 0xc0c0c0c0;
+					*out = *(u32*)(((SSRE_Vec4_t*)points) + 1);
 				}
 			}
+			SSRE_Vec4_Add3( &bary, &bary, &baryAStep );
 		}
+
+		SSRE_Vec4_Add3( &baryRow, &baryRow, &baryBStep );
 	}
 }
 
@@ -134,7 +141,7 @@ static SSRE_VertexPCT_t s_CubeVertices[] =
 {
 	// Top face.
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
 	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
 
 	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
