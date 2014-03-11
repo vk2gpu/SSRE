@@ -23,7 +23,7 @@ THE SOFTWARE.
 */
 #include "SSRE_Fixed.h"
 
-static SSRE_Fixed_t s_SineTable[256] = 
+SSRE_Fixed_t s_SineTable[256] = 
 {
 	SSRE_Fixed_FromFloat( 0 ),
 	SSRE_Fixed_FromFloat( 0.02454122 ),
@@ -283,7 +283,7 @@ static SSRE_Fixed_t s_SineTable[256] =
 	SSRE_Fixed_FromFloat( -0.02453111 )
 };
 
-static SSRE_Fixed_t s_TangentTable[256] = 
+SSRE_Fixed_t s_TangentTable[256] = 
 {
 	SSRE_Fixed_FromFloat( 0 ),
 	SSRE_Fixed_FromFloat( 0.02454862 ),
@@ -542,6 +542,61 @@ static SSRE_Fixed_t s_TangentTable[256] =
 	SSRE_Fixed_FromFloat( -0.04911677 ),
 	SSRE_Fixed_FromFloat( -0.02453849 )
 };
+
+/**
+ * Functions.
+ */
+SSRE_Fixed_t SSRE_Fixed_Mul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
+{
+	s64 value = (s64)lhs * (s64)rhs;
+	return (SSRE_Fixed_t)( ( value ) >> SSRE_FIXED_PRECISION );
+}
+
+SSRE_Fixed_t SSRE_Fixed_FastMul( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
+{
+	return ( lhs >> SSRE_FIXED_HALF_PRECISION ) * ( rhs >> SSRE_FIXED_HALF_PRECISION );
+}
+
+SSRE_Fixed_t SSRE_Fixed_Div( SSRE_Fixed_t lhs, SSRE_Fixed_t rhs )
+{
+	return (SSRE_Fixed_t)( ( ( (s64)lhs << SSRE_FIXED_DOUBLE_PRECISION ) / (s64)rhs ) >> SSRE_FIXED_PRECISION );
+}
+
+SSRE_Fixed_t SSRE_Fixed_Rcp( SSRE_Fixed_t lhs )
+{
+	return lhs != 0 ? SSRE_Fixed_Div( SSRE_FIXED_ONE, lhs ) : 0;
+}
+
+SSRE_Fixed_t SSRE_Fixed_Min2( SSRE_Fixed_t a, SSRE_Fixed_t b )
+{
+	return a < b ? a : b;
+}
+
+SSRE_Fixed_t SSRE_Fixed_Min3( SSRE_Fixed_t a, SSRE_Fixed_t b, SSRE_Fixed_t c )
+{
+	return SSRE_Fixed_Min2( SSRE_Fixed_Min2( a, b ), c );
+}
+
+SSRE_Fixed_t SSRE_Fixed_Max2( SSRE_Fixed_t a, SSRE_Fixed_t b )
+{
+	return a > b ? a : b;
+}
+
+SSRE_Fixed_t SSRE_Fixed_Max3( SSRE_Fixed_t a, SSRE_Fixed_t b, SSRE_Fixed_t c )
+{
+	return SSRE_Fixed_Max2( SSRE_Fixed_Max2( a, b ), c );
+}
+
+SSRE_Fixed_t SSRE_Fixed_Clamp( SSRE_Fixed_t val, SSRE_Fixed_t min, SSRE_Fixed_t max )
+{
+	return SSRE_Fixed_Min2( SSRE_Fixed_Max2( val, min ), max );
+}
+
+SSRE_Fixed_t SSRE_Fixed_Floor( SSRE_Fixed_t val )
+{
+	return val & ~( ( 1 << SSRE_FIXED_PRECISION ) - 1 );
+}
+
 
 SSRE_Fixed_t SSRE_Fixed_Sqrt( SSRE_Fixed_t lhs )
 {
