@@ -28,17 +28,13 @@ THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 
-SSRE_VertexProcessor_t* SSRE_VertexProcessor_Create( u32 noofVertices, u32 vertexType, u32 vertexStride )
+void SSRE_VertexProcessor_Create( SSRE_VertexProcessor_t* vertexProcessor, u32 noofVertices, u32 vertexType, u32 vertexStride )
 {
-	SSRE_VertexProcessor_t* vertexProcessor = (SSRE_VertexProcessor_t*)malloc( sizeof( SSRE_VertexProcessor_t ) );
-
 	vertexProcessor->currVertex = 0;
 	vertexProcessor->noofVertices = noofVertices;
 	vertexProcessor->vertexType = vertexType;
 	vertexProcessor->vertexStride = vertexStride;
 	vertexProcessor->vertices = (SSRE_Vec4_t*)malloc( noofVertices * sizeof( vertexStride ) );
-
-	return vertexProcessor;
 }
 
 void SSRE_VertexProcessor_Destroy( SSRE_VertexProcessor_t* vertexProcessor )
@@ -48,7 +44,7 @@ void SSRE_VertexProcessor_Destroy( SSRE_VertexProcessor_t* vertexProcessor )
 	assert( vertexProcessor->vertices != NULL );
 
 	free( vertexProcessor->vertices );
-	free( vertexProcessor );
+	vertexProcessor->vertices = NULL;
 }
 
 const void* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcessor, 

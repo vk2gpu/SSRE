@@ -42,11 +42,12 @@ typedef struct
 
 /**
  * Create vertex processor.
+ * @param vertexProcessor Output vertex processor.
  * @param noofVertices Number of vertices tobe able to cope.
  * @param vertexType Vertex type flags.
  * @param vertexStride Vertex stride.
  */
-SSRE_VertexProcessor_t* SSRE_VertexProcessor_Create( u32 noofVertices, u32 vertexType, u32 vertexStride );
+void SSRE_VertexProcessor_Create( SSRE_VertexProcessor_t* vertexProcessor, u32 noofVertices, u32 vertexType, u32 vertexStride );
 
 /**
  * Destroy vertex processor.

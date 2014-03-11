@@ -38,9 +38,10 @@ typedef struct
 
 /**
  * Create matrix stack.
+ * @param matrixStack Output matrix stack.
  * @param noofVertices Number of vertices tobe able to cope.
  */
-SSRE_MatrixStack_t* SSRE_MatrixStack_Create( u32 noofMatrices );
+void SSRE_MatrixStack_Create( SSRE_MatrixStack_t* matrixStack, u32 noofMatrices );
 
 /**
  * Destroy matrix stack.

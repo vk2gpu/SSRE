@@ -29,14 +29,11 @@ THE SOFTWARE.
 #include <malloc.h>
 #include <math.h>
 
-typedef struct
-{
-	u32* pixels;
-	int w;
-	int h;
-} PixelBuffer_t;
+#define OUT_W ( 240 )
+#define OUT_H ( 160 )
+#define OUT_SCALE ( 3 )
 
-void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
+void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
 {
 	int x, y;
 	u32* out;
@@ -93,7 +90,7 @@ void drawTriangle( PixelBuffer_t* buffer, const void* points, u32 vertexType, u3
 	baryRow.z = SSRE_Math_OrientationTest2( point0, point1, &minCoord );
 
 	// Setup output row of pixels.
-	outRow = &buffer->pixels[ minPixel.x + minPixel.y * buffer->w ];
+	outRow = (u32*)SSRE_PixelBuffer_Pixel( buffer, minPixel.x, minPixel.y );
 	
 	// Render all pixels which are in the triangle.
 	for( y = minPixel.y; y <= maxPixel.y; ++y, outRow += buffer->w )
@@ -208,36 +205,35 @@ int main( int argc, char* argv[] )
 	SSRE_Mat44_t projMat;
 	SSRE_Mat44_t ssMat;
 	SSRE_Mat44_t clipMat;
-	SSRE_MatrixStack_t* matrixStack = SSRE_MatrixStack_Create( 16 );
-	SSRE_VertexProcessor_t* vertexProcessor = SSRE_VertexProcessor_Create( 256, SSRE_VERTEX_HAS_POSITION | 
-	                                                                            SSRE_VERTEX_HAS_COLOUR |
-	                                                                            SSRE_VERTEX_HAS_UV, 
-																				sizeof( SSRE_VertexPCT_t ) );
+	SSRE_MatrixStack_t matrixStack;
+	SSRE_VertexProcessor_t vertexProcessor;
+
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
 	SDL_Texture* texture = NULL;
-	PixelBuffer_t buffer = 
-	{
-		NULL,
-		240,
-		160
-	};
+	SSRE_PixelBuffer_t buffer; 
 	SSRE_Vec4_t halfRes = 
 	{ 
-		( buffer.w >> 1 ) << SSRE_FIXED_PRECISION,
-		( buffer.h >> 1 ) << SSRE_FIXED_PRECISION,
+		( OUT_W >> 1 ) << SSRE_FIXED_PRECISION,
+		( OUT_H >> 1 ) << SSRE_FIXED_PRECISION,
 		0, 
 		0 
 	};
 
 	u32 shouldQuit = 0;
-	buffer.pixels = (u32*)malloc( buffer.w * buffer.h * sizeof( u32 ) );
+
+	SSRE_PixelBuffer_Create( &buffer, 4, OUT_W, OUT_H, NULL );
+	SSRE_MatrixStack_Create( &matrixStack, 16 );
+	SSRE_VertexProcessor_Create( &vertexProcessor, 256, SSRE_VERTEX_HAS_POSITION | 
+	                                                    SSRE_VERTEX_HAS_COLOUR |
+	                                                    SSRE_VERTEX_HAS_UV, 
+														sizeof( SSRE_VertexPCT_t ) );
 	SSRE_Mat44_Identity( &worldMat );
 	SSRE_Mat44_Identity( &viewMat );
 	SSRE_Mat44_Identity( &projMat );
 	SSRE_Mat44_Identity( &clipMat );
 
-	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w * 3, buffer.h * 3, 0 );
+	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w * OUT_SCALE, buffer.h * OUT_SCALE, 0 );
 	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
 	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, buffer.w, buffer.h );
 
@@ -258,10 +254,10 @@ int main( int argc, char* argv[] )
 			}
 		}
 
-		memset( buffer.pixels, 0x0, sizeof( u32 ) * buffer.w * buffer.h );
+		memset( buffer.addr, 0x0, sizeof( u32 ) * buffer.w * buffer.h );
 
 		// Reset vertex processor.
-		SSRE_VertexProcessor_Reset( vertexProcessor );
+		SSRE_VertexProcessor_Reset( &vertexProcessor );
 
 		// Generate screen space matrix.
 		SSRE_Mat44_Identity( &ssMat );
@@ -274,9 +270,9 @@ int main( int argc, char* argv[] )
 		SSRE_Mat44_Perspective( &projMat, 8, SSRE_Fixed_Div( halfRes.y, halfRes.x ), SSRE_Fixed_FromFloat( 1.0f ), SSRE_Fixed_FromFloat( 10.0f ) );
 
 		// Matrices onto stack.
-		SSRE_MatrixStack_Push( matrixStack, &ssMat );
-		SSRE_MatrixStack_Push( matrixStack, &projMat );
-		SSRE_MatrixStack_Push( matrixStack, &viewMat );
+		SSRE_MatrixStack_Push( &matrixStack, &ssMat );
+		SSRE_MatrixStack_Push( &matrixStack, &projMat );
+		SSRE_MatrixStack_Push( &matrixStack, &viewMat );
 
 		// Draw model.
 		{
@@ -285,26 +281,26 @@ int main( int argc, char* argv[] )
 			worldMat.rows[3].y = 0;
 			worldMat.rows[3].z = -SSRE_FIXED_ONE << 3;
 
-			SSRE_MatrixStack_Push( matrixStack, &worldMat );
+			SSRE_MatrixStack_Push( &matrixStack, &worldMat );
 
-			SSRE_MatrixStack_Get( &clipMat, matrixStack );
-			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( vertexProcessor, 36, s_CubeVertices, &clipMat );
+			SSRE_MatrixStack_Get( &clipMat, &matrixStack );
+			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( &vertexProcessor, 36, s_CubeVertices, &clipMat );
 
 			for( j = 0; j < 1; ++j )
 			{
 				for( i = 0; i < 12; ++i )
 				{
-					drawTriangle( &buffer, firstVertex + ( i * 3 ), vertexProcessor->vertexType, vertexProcessor->vertexStride );
+					drawTriangle( &buffer, firstVertex + ( i * 3 ), vertexProcessor.vertexType, vertexProcessor.vertexStride );
 				}
 			}
 
-			SSRE_MatrixStack_Pop( matrixStack, 1 );
+			SSRE_MatrixStack_Pop( &matrixStack, 1 );
 		}
 
 		// Pop proj and view.
-		SSRE_MatrixStack_Pop( matrixStack, 3 );
+		SSRE_MatrixStack_Pop( &matrixStack, 3 );
 
-		SDL_UpdateTexture(texture, NULL, buffer.pixels, buffer.w * sizeof ( u32 ));
+		SDL_UpdateTexture(texture, NULL, buffer.addr, buffer.w * sizeof ( u32 ));
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
@@ -324,10 +320,9 @@ int main( int argc, char* argv[] )
 	}
 	while( !shouldQuit );
 
-	SSRE_MatrixStack_Destroy( matrixStack );
-	SSRE_VertexProcessor_Destroy( vertexProcessor );
-
-	free( buffer.pixels );
+	SSRE_MatrixStack_Destroy( &matrixStack );
+	SSRE_VertexProcessor_Destroy( &vertexProcessor );
+	SSRE_PixelBuffer_Destroy( &buffer );
 
 	return 0;
 }

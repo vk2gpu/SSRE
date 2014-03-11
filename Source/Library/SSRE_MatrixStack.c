@@ -27,18 +27,14 @@ THE SOFTWARE.
 #include <assert.h>
 #include <stdio.h>
 
-SSRE_MatrixStack_t* SSRE_MatrixStack_Create( u32 noofMatrices )
+void SSRE_MatrixStack_Create( SSRE_MatrixStack_t* matrixStack, u32 noofMatrices )
 {
-	SSRE_MatrixStack_t* matrixStack = (SSRE_MatrixStack_t*)malloc( sizeof( SSRE_MatrixStack_t ) );
-
 	matrixStack->currMatrix = 0;
 	matrixStack->noofMatrices = noofMatrices;
 	matrixStack->matrices = (SSRE_Mat44_t*)malloc( noofMatrices * sizeof( SSRE_Mat44_t ) );
 
 	// Stick an identity at the top.
 	SSRE_Mat44_Identity( &matrixStack->matrices[0] );
-
-	return matrixStack;
 }
 
 void SSRE_MatrixStack_Destroy( SSRE_MatrixStack_t* matrixStack )
@@ -48,7 +44,7 @@ void SSRE_MatrixStack_Destroy( SSRE_MatrixStack_t* matrixStack )
 	assert( matrixStack->matrices != NULL );
 
 	free( matrixStack->matrices );
-	free( matrixStack );
+	matrixStack->matrices = NULL;
 }
 
 void SSRE_MatrixStack_Push( SSRE_MatrixStack_t* matrixStack, const SSRE_Mat44_t* in )

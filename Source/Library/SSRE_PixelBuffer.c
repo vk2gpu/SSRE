@@ -21,25 +21,40 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef __SSRE_H__
-#define __SSRE_H__
-
-#include "SSRE_Types.h"
-#include "SSRE_Fixed.h"
-#include "SSRE_Vec4.h"
-#include "SSRE_Mat44.h"
-#include "SSRE_MatrixStack.h"
-#include "SSRE_Math.h"
 #include "SSRE_PixelBuffer.h"
-#include "SSRE_Vertex.h"
-#include "SSRE_VertexProcessor.h"
 
-/**
- * Get library version.
- * @param outMajor Pointer for where to write major version.
- * @param outMajor Pointer for where to write minor version.
- * @param outMajor Pointer for where to write revision version.
- */
-void SSRE_GetVersion( int* outMajor, int* outMinor, int* outRevision );
+#include <stdio.h>
+#include <malloc.h>
 
-#endif // __SSRE_H__
+void SSRE_PixelBuffer_Create( SSRE_PixelBuffer_t* pixelBuffer, int bpp, int w, int h, void* startAddress )
+{
+	pixelBuffer->bpp = bpp;
+	pixelBuffer->w = w;
+	pixelBuffer->h = h;
+
+	if( startAddress == NULL )
+	{
+		pixelBuffer->flags = SSRE_PIXELBUFFER_FLAG_MEMORY_MANAGED;
+		pixelBuffer->addr = malloc( ( w * h * bpp ) );
+	}
+	else
+	{
+		pixelBuffer->flags = 0;
+		pixelBuffer->addr = startAddress;
+	}
+}
+
+void SSRE_PixelBuffer_Destroy( SSRE_PixelBuffer_t* pixelBuffer )
+{
+	if( ( pixelBuffer->flags & SSRE_PIXELBUFFER_FLAG_MEMORY_MANAGED ) != 0 )
+	{
+		free( pixelBuffer->addr );
+		pixelBuffer->addr = NULL;
+	}
+}
+
+void* SSRE_PixelBuffer_Pixel( SSRE_PixelBuffer_t* pixelBuffer, int x, int y )
+{
+	u8* byteAddr = (u8*)pixelBuffer->addr;
+	return byteAddr + ( ( x + y * pixelBuffer->w ) * pixelBuffer->bpp );
+}

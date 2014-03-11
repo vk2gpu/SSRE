@@ -21,25 +21,48 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
-#ifndef __SSRE_H__
-#define __SSRE_H__
+#ifndef __SSRE_PIXELBUFFER_H__
+#define __SSRE_PIXELBUFFER_H__
 
 #include "SSRE_Types.h"
-#include "SSRE_Fixed.h"
-#include "SSRE_Vec4.h"
-#include "SSRE_Mat44.h"
-#include "SSRE_MatrixStack.h"
-#include "SSRE_Math.h"
-#include "SSRE_PixelBuffer.h"
-#include "SSRE_Vertex.h"
-#include "SSRE_VertexProcessor.h"
 
 /**
- * Get library version.
- * @param outMajor Pointer for where to write major version.
- * @param outMajor Pointer for where to write minor version.
- * @param outMajor Pointer for where to write revision version.
+ * Pixel buffer.
  */
-void SSRE_GetVersion( int* outMajor, int* outMinor, int* outRevision );
+typedef struct
+{
+	int		bpp;
+	int		w;
+	int		h;
+	u32		flags;
+	void*	addr;
+} SSRE_PixelBuffer_t;
 
-#endif // __SSRE_H__
+// Pixel buffer manages it's own memory.
+#define SSRE_PIXELBUFFER_FLAG_MEMORY_MANAGED		( 0x000000001 )
+
+/**
+ * Create pixel buffer.
+ * @param pixelBuffer Output pixel buffer.
+ * @param bpp Bytes per pixel.
+ * @param w Width
+ * @param h Height
+ * @param startAddress Start address. NULL if you want to create one.
+ */
+void SSRE_PixelBuffer_Create( SSRE_PixelBuffer_t* pixelBuffer, int bpp, int w, int h, void* startAddress );
+
+/**
+ * Destroy pixel buffer.
+ * @param pixelBuffer Pixel buffer.
+ */
+void SSRE_PixelBuffer_Destroy( SSRE_PixelBuffer_t* pixelBuffer );
+
+/**
+ * Get pointer to pixel.
+ * @param pixelBuffer Pixel buffer.
+ * @param x
+ * @param y
+ */
+void* SSRE_PixelBuffer_Pixel( SSRE_PixelBuffer_t* pixelBuffer, int x, int y ); 
+
+#endif 
