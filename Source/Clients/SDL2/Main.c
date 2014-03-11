@@ -200,6 +200,10 @@ int main( int argc, char* argv[] )
 	u32 frameTicker = 0;
 	const SSRE_VertexPCT_t* firstVertex;
 
+	SDL_Window* window = NULL;
+	SDL_Renderer* renderer = NULL;
+	SDL_Texture* texture = NULL;
+
 	SSRE_Mat44_t worldMat;
 	SSRE_Mat44_t viewMat;
 	SSRE_Mat44_t projMat;
@@ -207,10 +211,6 @@ int main( int argc, char* argv[] )
 	SSRE_Mat44_t clipMat;
 	SSRE_MatrixStack_t matrixStack;
 	SSRE_VertexProcessor_t vertexProcessor;
-
-	SDL_Window* window = NULL;
-	SDL_Renderer* renderer = NULL;
-	SDL_Texture* texture = NULL;
 	SSRE_PixelBuffer_t buffer; 
 	SSRE_Vec4_t halfRes = 
 	{ 
@@ -222,12 +222,12 @@ int main( int argc, char* argv[] )
 
 	u32 shouldQuit = 0;
 
-	SSRE_PixelBuffer_Create( &buffer, 4, OUT_W, OUT_H, NULL );
 	SSRE_MatrixStack_Create( &matrixStack, 16 );
 	SSRE_VertexProcessor_Create( &vertexProcessor, 256, SSRE_VERTEX_HAS_POSITION | 
 	                                                    SSRE_VERTEX_HAS_COLOUR |
 	                                                    SSRE_VERTEX_HAS_UV, 
 														sizeof( SSRE_VertexPCT_t ) );
+	SSRE_PixelBuffer_Create( &buffer, 4, OUT_W, OUT_H, NULL );
 	SSRE_Mat44_Identity( &worldMat );
 	SSRE_Mat44_Identity( &viewMat );
 	SSRE_Mat44_Identity( &projMat );
