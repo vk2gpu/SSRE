@@ -84,8 +84,26 @@ const void* SSRE_VertexProcessor_Process( SSRE_VertexProcessor_t* vertexProcesso
 		offset += sizeof( SSRE_Vec4_t );
 	}
 
-	// Colour processing.
-	if( ( vertexProcessor->vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
+	// Colour processing (16 bit)
+	if( ( vertexProcessor->vertexType & SSRE_VERTEX_HAS_COLOUR_16 ) != 0 )
+	{
+		outVertex = firstVertex + offset;
+		inVertex = (char*)vertices + offset;
+		for( i = 0; i < noofVertices; ++i )
+		{
+			// Simple copy.
+			*((u16*)outVertex) = *((u16*)inVertex);
+
+			// Advance.
+			outVertex += vertexProcessor->vertexStride;
+			inVertex += vertexProcessor->vertexStride;
+		}
+
+		offset += sizeof( u16 );
+	}
+
+	// Colour processing (32 bit)
+	if( ( vertexProcessor->vertexType & SSRE_VERTEX_HAS_COLOUR_32 ) != 0 )
 	{
 		outVertex = firstVertex + offset;
 		inVertex = (char*)vertices + offset;

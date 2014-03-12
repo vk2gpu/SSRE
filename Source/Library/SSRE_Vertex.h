@@ -27,8 +27,9 @@ THE SOFTWARE.
 #include "SSRE_Vec4.h"
 
 #define	SSRE_VERTEX_HAS_POSITION				0x00000001
-#define	SSRE_VERTEX_HAS_COLOUR					0x00000002
-#define	SSRE_VERTEX_HAS_UV						0x00000004
+#define	SSRE_VERTEX_HAS_COLOUR_16				0x00000004
+#define	SSRE_VERTEX_HAS_COLOUR_32				0x00000002
+#define	SSRE_VERTEX_HAS_UV						0x00000008
 
 /**
  * SSRE_VertexP_t
@@ -39,13 +40,22 @@ typedef struct
 } SSRE_VertexP_t;
 
 /**
- * SSRE_VertexPC_t
+ * SSRE_VertexPC16_t
+ */
+typedef struct
+{
+	SSRE_Vec4_t pos;
+	u16			col;
+} SSRE_VertexPC16_t;
+
+/**
+ * SSRE_VertexPC32_t
  */
 typedef struct
 {
 	SSRE_Vec4_t pos;
 	u32			col;
-} SSRE_VertexPC_t;
+} SSRE_VertexPC32_t;
 
 /**
  * SSRE_VertexPT_t
@@ -58,7 +68,18 @@ typedef struct
 } SSRE_VertexPT_t;
 
 /**
- * SSRE_VertexPCT_t
+ * SSRE_VertexPC16T_t
+ */
+typedef struct
+{
+	SSRE_Vec4_t pos;
+	u16			col;
+	u8			u;
+	u8			v;
+} SSRE_VertexPC16T_t;
+
+/**
+ * SSRE_VertexPC32T_t
  */
 typedef struct
 {
@@ -66,6 +87,6 @@ typedef struct
 	u32			col;
 	u8			u;
 	u8			v;
-} SSRE_VertexPCT_t;
+} SSRE_VertexPC32T_t;
 
 #endif

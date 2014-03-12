@@ -36,8 +36,8 @@ THE SOFTWARE.
 void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexType, u32 vertexStride )
 {
 	int x, y;
-	u32* out;
-	u32* outRow;
+	u16* out;
+	u16* outRow;
 	SSRE_Vec4_t minCoord = { 0, 0, 0, 0 };
 	SSRE_Vec4_t maxCoord = { 0, 0, 0, 0 };
 	SSRE_Vec4_t minPixel = { 0, 0, 0, 0 };
@@ -45,7 +45,7 @@ void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexTyp
 	const SSRE_Vec4_t* point0 = (const SSRE_Vec4_t*)(((char*)points));
 	const SSRE_Vec4_t* point1 = (const SSRE_Vec4_t*)(((char*)points) + vertexStride);
 	const SSRE_Vec4_t* point2 = (const SSRE_Vec4_t*)(((char*)points) + ( vertexStride << 1 ));
-	const u32* colour = (const u32*)(point0 + 1);
+	const u16* colour = (const u16*)(point0 + 1);
 	SSRE_Vec4_t cross20, cross21, cross123;
 	SSRE_Vec4_t baryAStep, baryBStep;
 	SSRE_Vec4_t baryRow = { 0, 0, 0, 0 };
@@ -90,7 +90,7 @@ void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexTyp
 	baryRow.z = SSRE_Math_OrientationTest2( point0, point1, &minCoord );
 
 	// Setup output row of pixels.
-	outRow = (u32*)SSRE_PixelBuffer_Pixel( buffer, minPixel.x, minPixel.y );
+	outRow = (u16*)SSRE_PixelBuffer_Pixel( buffer, minPixel.x, minPixel.y );
 	
 	// Render all pixels which are in the triangle.
 	for( y = minPixel.y; y <= maxPixel.y; ++y, outRow += buffer->w )
@@ -102,7 +102,7 @@ void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexTyp
 		{
 			if( ( bary.x | bary.y | bary.z ) >= 0 )
 			{
-				if( ( vertexType & SSRE_VERTEX_HAS_COLOUR ) != 0 )
+				if( ( vertexType & SSRE_VERTEX_HAS_COLOUR_16 ) != 0 )
 				{
 					// Compensate for some precision loss when we try to renormalise.
 					baryNrm.x = bary.x >> SSRE_FIXED_HALF_PRECISION;
@@ -112,11 +112,7 @@ void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexTyp
 					// Renormalise. Approximation.
 					SSRE_Vec4_FastMulScalar3( &baryNrm, &baryNrm, SSRE_Fixed_Rcp( baryNrm.x + baryNrm.y + baryNrm.z ) );				
 
-					*out = SSRE_Math_LerpColourR8G8B8A8( 3, colour, vertexStride, &baryNrm.x );
-				}
-				else
-				{
-					*out = *colour;
+					*out = SSRE_Math_LerpColourR5G5B5( 3, colour, vertexStride, &baryNrm.x );
 				}
 			}
 			SSRE_Vec4_Add3( &bary, &bary, &baryAStep );
@@ -126,69 +122,69 @@ void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexTyp
 	}
 }
 
-static SSRE_VertexPCT_t s_TriangleVertices[] = 
+static SSRE_VertexPC16T_t s_TriangleVertices[] = 
 {
 	// Top face.
-	{ { SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  0.5f ), SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  0.5f ), SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -0.5f ), SSRE_Fixed_FromFloat(  0.5f ), SSRE_Fixed_FromFloat(  0.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
 };
 
-static SSRE_VertexPCT_t s_CubeVertices[] = 
+static SSRE_VertexPC16T_t s_CubeVertices[] = 
 {
 	// Top face.
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
 
 	// bottom face.
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0xff0000ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555( 31,  0,  0 ), 0, 0 },
 
 	// back face.
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
 
 	// front face.
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x00ff00ff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0, 31,  0 ), 0, 0 },
 
 	// Right face.
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
 
 	// Left face.
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
 
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
-	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, 0x0000ffff, 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ),SSRE_Fixed_FromFloat(  1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
+	{ { SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat( -1.0f ),SSRE_Fixed_FromFloat( -1.0f ), SSRE_Fixed_FromFloat(  1.0f ) }, SSRE_MATH_RGB555(  0,  0, 31 ), 0, 0 },
 };
 
 int main( int argc, char* argv[] )
@@ -198,7 +194,7 @@ int main( int argc, char* argv[] )
 	u32 timerEnd;
 	u32 frameCount = 0;
 	u32 frameTicker = 0;
-	const SSRE_VertexPCT_t* firstVertex;
+	const SSRE_VertexPC16T_t* firstVertex;
 
 	SDL_Window* window = NULL;
 	SDL_Renderer* renderer = NULL;
@@ -224,18 +220,18 @@ int main( int argc, char* argv[] )
 
 	SSRE_MatrixStack_Create( &matrixStack, 16 );
 	SSRE_VertexProcessor_Create( &vertexProcessor, 256, SSRE_VERTEX_HAS_POSITION | 
-	                                                    SSRE_VERTEX_HAS_COLOUR |
+	                                                    SSRE_VERTEX_HAS_COLOUR_16 |
 	                                                    SSRE_VERTEX_HAS_UV, 
-														sizeof( SSRE_VertexPCT_t ) );
-	SSRE_PixelBuffer_Create( &buffer, 4, OUT_W, OUT_H, NULL );
+														sizeof( SSRE_VertexPC16T_t ) );
+	SSRE_PixelBuffer_Create( &buffer, 2, OUT_W, OUT_H, NULL );
 	SSRE_Mat44_Identity( &worldMat );
 	SSRE_Mat44_Identity( &viewMat );
 	SSRE_Mat44_Identity( &projMat );
 	SSRE_Mat44_Identity( &clipMat );
 
 	window = SDL_CreateWindow( "Simple Software Rasterising Engine SDL2 Client", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, buffer.w * OUT_SCALE, buffer.h * OUT_SCALE, 0 );
-	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED );
-	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, buffer.w, buffer.h );
+	renderer = SDL_CreateRenderer( window, -1, SDL_RENDERER_SOFTWARE );
+	texture = SDL_CreateTexture( renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, buffer.w, buffer.h );
 
 	timerStart = SDL_GetTicks();
 	do
@@ -254,7 +250,7 @@ int main( int argc, char* argv[] )
 			}
 		}
 
-		memset( buffer.addr, 0x0, sizeof( u32 ) * buffer.w * buffer.h );
+		memset( buffer.addr, 0x0, buffer.w * buffer.h * buffer.bpp );
 
 		// Reset vertex processor.
 		SSRE_VertexProcessor_Reset( &vertexProcessor );
@@ -284,7 +280,7 @@ int main( int argc, char* argv[] )
 			SSRE_MatrixStack_Push( &matrixStack, &worldMat );
 
 			SSRE_MatrixStack_Get( &clipMat, &matrixStack );
-			firstVertex = (SSRE_VertexPCT_t*)SSRE_VertexProcessor_Process( &vertexProcessor, 36, s_CubeVertices, &clipMat );
+			firstVertex = (SSRE_VertexPC16T_t*)SSRE_VertexProcessor_Process( &vertexProcessor, 36, s_CubeVertices, &clipMat );
 
 			for( j = 0; j < 1; ++j )
 			{
@@ -300,7 +296,7 @@ int main( int argc, char* argv[] )
 		// Pop proj and view.
 		SSRE_MatrixStack_Pop( &matrixStack, 3 );
 
-		SDL_UpdateTexture(texture, NULL, buffer.addr, buffer.w * sizeof ( u32 ));
+		SDL_UpdateTexture(texture, NULL, buffer.addr, buffer.w * buffer.bpp );
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);

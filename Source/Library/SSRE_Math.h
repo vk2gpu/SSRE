@@ -33,6 +33,9 @@ THE SOFTWARE.
 #define SSRE_MATH_INTERSECTION_SEGMENT			( 1 )
 
 
+#define SSRE_MATH_RGB555( r, g, b ) \
+	( (u16)( r | ( g << 5 ) | ( b << 10 ) ) )
+
 /**
  * Cartesian to Barycentric.
  * @param out Output barycentric coordinates.
@@ -115,6 +118,16 @@ int SSRE_Math_LineTriangleIntersection2( SSRE_Vec4_t* out,
  * @param amounts Array of amounts (0.0-1.0)
  */
 u32 SSRE_Math_LerpColourR8G8B8A8( int num, const void* colours, u32 stride, const SSRE_Fixed_t* amounts );
+
+/**
+ * Mix R5G5B5 colours.
+ * @param num Number of colours.
+ * @param colours Array of colours.
+ * @param stride Stride.
+ * @param amounts Array of amounts (0.0-1.0)
+ */
+u16 SSRE_Math_LerpColourR5G5B5( int num, const void* colours, u32 stride, const SSRE_Fixed_t* amounts );
+
 
 /**
  * Det2 orientation.

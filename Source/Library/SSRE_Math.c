@@ -313,6 +313,39 @@ u32 SSRE_Math_LerpColourR8G8B8A8( int num, const void* colours, u32 stride, cons
 	return col.x | col.y << 8 | col.z << 16 | col.w << 24;
 }
 
+u16 SSRE_Math_LerpColourR5G5B5( int num, const void* colours, u32 stride, const SSRE_Fixed_t* amounts )
+{
+	int i;
+	SSRE_Vec4_t col = { 0, 0, 0, 0 };
+	
+	for( i = 0; i < num; ++i )
+	{
+		SSRE_Vec4_t in;
+		in.x = ( *((const u16*)colours) & 0x001f ) << SSRE_FIXED_PRECISION;
+		in.y = ( *((const u16*)colours) & 0x03e0 ) >> 5 << SSRE_FIXED_PRECISION;
+		in.z = ( *((const u16*)colours) & 0x7c00 ) >> 10 << SSRE_FIXED_PRECISION;
+
+		SSRE_Vec4_FastMulScalar3( &in, &in, amounts[i] );
+		SSRE_Vec4_Add3( &col, &col, &in );
+
+		colours = (const char*)colours + stride;
+	}
+
+	// Floor to int.
+	col.x = col.x >> SSRE_FIXED_PRECISION;
+	col.y = col.y >> SSRE_FIXED_PRECISION;
+	col.z = col.z >> SSRE_FIXED_PRECISION;
+	col.w = col.w >> SSRE_FIXED_PRECISION;
+
+	// Clamp.
+	col.x = ( col.x > 0x1f ? 0x1f : col.x ) & 0x1f;
+	col.y = ( col.y > 0x1f ? 0x1f : col.y ) & 0x1f;
+	col.z = ( col.z > 0x1f ? 0x1f : col.z ) & 0x1f;
+
+	// Pack for output.
+	return col.x | col.y << 5 | col.z << 10;
+}
+
 SSRE_Fixed_t SSRE_Math_OrientationTest2( const SSRE_Vec4_t* a, 
                                          const SSRE_Vec4_t* b, 
                                          const SSRE_Vec4_t* c)
