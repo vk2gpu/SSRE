@@ -61,7 +61,7 @@ void drawTriangle( SSRE_PixelBuffer_t* buffer, const void* points, u32 vertexTyp
 		return;
 	}
 
-	minCoord.x = SSRE_Fixed_Floor( SSRE_Fixed_Min3( point0->x, point1->x, point2->x ) );
+	minCoord.x = ( ( SSRE_Fixed_Floor( SSRE_Fixed_Min3( point0->x, point1->x, point2->x ) ) >> SSRE_FIXED_PRECISION ) & 0xfffe ) << SSRE_FIXED_PRECISION;
 	minCoord.y = SSRE_Fixed_Floor( SSRE_Fixed_Min3( point0->y, point1->y, point2->y ) );
 	maxCoord.x = SSRE_Fixed_Max3( point0->x, point1->x, point2->x );
 	maxCoord.y = SSRE_Fixed_Max3( point0->y, point1->y, point2->y );

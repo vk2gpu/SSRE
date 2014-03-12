@@ -174,8 +174,9 @@ void SSRE_Vec4_DivScalar2( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_
 {
 	if( rhs != 0 )
 	{
-		out->x = SSRE_Fixed_Div( lhs->x, rhs );
-		out->y = SSRE_Fixed_Div( lhs->y, rhs );
+		SSRE_Fixed_t inv = SSRE_Fixed_Rcp( rhs );
+		out->x = SSRE_Fixed_Mul( lhs->x, inv );
+		out->y = SSRE_Fixed_Mul( lhs->y, inv );
 	}
 }
 
@@ -183,9 +184,10 @@ void SSRE_Vec4_DivScalar3( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_
 {
 	if( rhs != 0 )
 	{
-		out->x = SSRE_Fixed_Div( lhs->x, rhs );
-		out->y = SSRE_Fixed_Div( lhs->y, rhs );
-		out->z = SSRE_Fixed_Div( lhs->z, rhs );
+		SSRE_Fixed_t inv = SSRE_Fixed_Rcp( rhs );
+		out->x = SSRE_Fixed_Mul( lhs->x, inv );
+		out->y = SSRE_Fixed_Mul( lhs->y, inv );
+		out->z = SSRE_Fixed_Mul( lhs->z, inv );
 	}
 }
 
@@ -193,10 +195,11 @@ void SSRE_Vec4_DivScalar( SSRE_Vec4_t* out, const SSRE_Vec4_t* lhs, SSRE_Fixed_t
 {
 	if( rhs != 0 )
 	{
-		out->x = SSRE_Fixed_Div( lhs->x, rhs );
-		out->y = SSRE_Fixed_Div( lhs->y, rhs );
-		out->z = SSRE_Fixed_Div( lhs->z, rhs );
-		out->w = SSRE_Fixed_Div( lhs->w, rhs );
+		SSRE_Fixed_t inv = SSRE_Fixed_Rcp( rhs );
+		out->x = SSRE_Fixed_Mul( lhs->x, inv );
+		out->y = SSRE_Fixed_Mul( lhs->y, inv );
+		out->z = SSRE_Fixed_Mul( lhs->z, inv );
+		out->w = SSRE_Fixed_Mul( lhs->w, inv );
 	}
 }
 
